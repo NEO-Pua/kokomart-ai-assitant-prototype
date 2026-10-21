@@ -8,74 +8,114 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap">
 <style>
-/* Layout: one narrow column; a short intro, then one card per design direction. */
+/* Layout: a short intro, then one card per direction in a two-column grid (one column on phones).
+   Each card leads with real screenshots, desktop results beside the phone view, so the
+   directions can be compared before opening any of them. */
 :root{
-  --page:#F6F1EE; --surface:#FFFFFF; --line:#EEE5E0; --line-strong:#DCD0C9;
+  --page:#F6F1EE; --surface:#FFFFFF; --stage:#ECE5E0; --line:#EEE5E0; --line-strong:#DCD0C9;
   --ink:#231815; --ink-2:#5B504A; --ink-3:#766A63; --accent:#C8301E;
   --font:'Plus Jakarta Sans','Noto Sans JP','Hiragino Sans','Yu Gothic UI',system-ui,sans-serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
-  :root{--page:#121011;--surface:#1F1A1B;--line:#352D2E;--line-strong:#4A4041;--ink:#F6EFEB;--ink-2:#CDC1BB;--ink-3:#A3978F;--accent:#FF8E7D;color-scheme:dark}
+  :root{--page:#121011;--surface:#1F1A1B;--stage:#2A2425;--line:#352D2E;--line-strong:#4A4041;--ink:#F6EFEB;--ink-2:#CDC1BB;--ink-3:#A3978F;--accent:#FF8E7D;color-scheme:dark}
 }
 body{margin:0;background:var(--page);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
-main{max-width:720px;margin:0 auto;padding:56px 20px 64px;display:flex;flex-direction:column;gap:32px}
-header{display:flex;flex-direction:column;gap:8px}
+main{max-width:1120px;margin:0 auto;padding:56px 20px 64px;display:flex;flex-direction:column;gap:32px}
+header{display:flex;flex-direction:column;gap:8px;max-width:720px}
 h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.01em}
 header p{margin:0;font-size:15px;line-height:1.8;color:var(--ink-2)}
-.list{display:grid;gap:12px}
-.card{display:flex;align-items:center;gap:16px;padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:20px;color:inherit;text-decoration:none;transition:border-color .15s,transform .2s}
-.card:hover{border-color:var(--line-strong);transform:translateY(-1px)}
-.card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.letter{flex:none;width:52px;height:52px;border-radius:16px;background:var(--page);display:grid;place-items:center;font-size:22px;font-weight:800}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr));gap:16px}
+.card{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:24px;color:inherit;text-decoration:none;overflow:hidden;transition:border-color .15s,transform .2s,box-shadow .2s}
+.card:hover{border-color:var(--line-strong);transform:translateY(-2px);box-shadow:0 18px 40px -24px rgba(40,18,10,.45)}
+.card:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+/* the preview stage: desktop screenshot and phone screenshot, same height, side by side */
+.shots{display:flex;align-items:flex-end;justify-content:center;gap:14px;height:340px;padding:22px 20px 0;background:var(--stage);box-sizing:border-box}
+.shots figure{margin:0;height:100%;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.shots img{display:block;height:calc(100% - 22px);width:auto;max-width:100%;object-fit:contain;object-position:bottom;border-radius:14px 14px 0 0;box-shadow:0 10px 30px -12px rgba(40,18,10,.4)}
+.shots .desk{flex:0 1 auto}
+.shots .phone{flex:none}
+.shots .phone img{border-radius:18px 18px 0 0}
+.shots figcaption{order:-1;font-size:12px;font-weight:700;color:var(--ink-3);letter-spacing:.04em}
+.info{display:flex;align-items:center;gap:16px;padding:18px 20px 20px;border-top:1px solid var(--line)}
+.letter{flex:none;width:48px;height:48px;border-radius:14px;background:var(--page);display:grid;place-items:center;font-size:21px;font-weight:800}
 .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 .body b{font-size:16px;font-weight:700}
 .body span{font-size:13.5px;line-height:1.7;color:var(--ink-3)}
 .open{flex:none;font-size:14px;font-weight:700;color:var(--accent)}
 .note{margin:0;font-size:13px;line-height:1.7;color:var(--ink-3)}
+@media (max-width:520px){
+  .shots{height:270px;gap:10px;padding:18px 12px 0}
+  .info{align-items:flex-start}
+  .open{display:none}
+}
 </style>
 </head>
 <body>
 <main>
   <header>
     <h1>ココAI デザイン案</h1>
-    <p>KokoMartのお買い物アシスタント「ココAI」のチャット画面の案です。各案を開き、右下のボタンからチャットを試してください。商品・価格はすべてサンプルです。</p>
+    <p>KokoMartのお買い物アシスタント「ココAI」のチャット画面の案です。各案を開き、パソコンでは右下のボタン、スマホでは下のメニューの「AI」からチャットを試してください。商品・価格はすべてサンプルです。</p>
   </header>
   <div class="list">
     <a class="card" href="direction-a/">
-      <span class="letter" aria-hidden="true">A</span>
-      <span class="body">
-        <b>案A：白基調・やわらかいグロー</b>
-        <span>ヘッダーなし、丸いフローティングボタン。選択式の質問とシンプルなセットカード。</span>
-      </span>
-      <span class="open" aria-hidden="true">開く →</span>
+      <div class="shots" aria-hidden="true">
+        <figure class="desk"><img src="previews/a-desktop.webp" alt="" width="400" height="720" loading="lazy"><figcaption>パソコン</figcaption></figure>
+        <figure class="phone"><img src="previews/a-phone.webp" alt="" width="390" height="844" loading="lazy"><figcaption>スマホ</figcaption></figure>
+      </div>
+      <div class="info">
+        <span class="letter" aria-hidden="true">A</span>
+        <span class="body">
+          <b>案A：白基調・やわらかいグロー</b>
+          <span>ヘッダーなし、丸いフローティングボタン。選択式の質問とシンプルなセットカード。</span>
+        </span>
+        <span class="open" aria-hidden="true">開く →</span>
+      </div>
     </a>
     <a class="card" href="direction-b/">
-      <span class="letter" aria-hidden="true">B</span>
-      <span class="body">
-        <b>案B：ダーク・オーロラ</b>
-        <span>全画面の高さのダークパネルに、ゆっくり動くオーロラの光。提案セットは横に並べてスワイプで比較。</span>
-      </span>
-      <span class="open" aria-hidden="true">開く →</span>
+      <div class="shots" aria-hidden="true">
+        <figure class="desk"><img src="previews/b-desktop.webp" alt="" width="420" height="868" loading="lazy"><figcaption>パソコン</figcaption></figure>
+        <figure class="phone"><img src="previews/b-phone.webp" alt="" width="390" height="844" loading="lazy"><figcaption>スマホ</figcaption></figure>
+      </div>
+      <div class="info">
+        <span class="letter" aria-hidden="true">B</span>
+        <span class="body">
+          <b>案B：ダーク・オーロラ</b>
+          <span>全画面の高さのダークパネルに、ゆっくり動くオーロラの光。提案セットは横に並べてスワイプで比較。</span>
+        </span>
+        <span class="open" aria-hidden="true">開く →</span>
+      </div>
     </a>
     <a class="card" href="direction-c/">
-      <span class="letter" aria-hidden="true">C</span>
-      <span class="body">
-        <b>案C：AIサーチ</b>
-        <span>画面中央の大きな入力欄から相談。作業の手順がチェックリストで見え、提案セットは表で横並びに比較。</span>
-      </span>
-      <span class="open" aria-hidden="true">開く →</span>
+      <div class="shots" aria-hidden="true">
+        <figure class="desk"><img src="previews/c-desktop.webp" alt="" width="880" height="852" loading="lazy"><figcaption>パソコン</figcaption></figure>
+        <figure class="phone"><img src="previews/c-phone.webp" alt="" width="390" height="844" loading="lazy"><figcaption>スマホ</figcaption></figure>
+      </div>
+      <div class="info">
+        <span class="letter" aria-hidden="true">C</span>
+        <span class="body">
+          <b>案C：AIサーチ</b>
+          <span>画面中央の大きな入力欄から相談。作業の手順がチェックリストで見え、提案セットは表で横並びに比較。</span>
+        </span>
+        <span class="open" aria-hidden="true">開く →</span>
+      </div>
     </a>
     <a class="card" href="direction-d/">
-      <span class="letter" aria-hidden="true">D</span>
-      <span class="body">
-        <b>案D：コンシェルジュ</b>
-        <span>下から開くシートで、1画面に1つの質問を大きなタイルで答えるだけ。結果はいちばんのおすすめを大きく1つ。</span>
-      </span>
-      <span class="open" aria-hidden="true">開く →</span>
+      <div class="shots" aria-hidden="true">
+        <figure class="desk"><img src="previews/d-desktop.webp" alt="" width="440" height="780" loading="lazy"><figcaption>パソコン</figcaption></figure>
+        <figure class="phone"><img src="previews/d-phone.webp" alt="" width="390" height="844" loading="lazy"><figcaption>スマホ</figcaption></figure>
+      </div>
+      <div class="info">
+        <span class="letter" aria-hidden="true">D</span>
+        <span class="body">
+          <b>案D：コンシェルジュ</b>
+          <span>下から開くシートで、1画面に1つの質問を大きなタイルで答えるだけ。結果はいちばんのおすすめを大きく1つ。</span>
+        </span>
+        <span class="open" aria-hidden="true">開く →</span>
+      </div>
     </a>
   </div>
-  <p class="note">ほかの案は追加しだい、ここに並びます。</p>
+  <p class="note">ほかの案は追加しだい、ここに並びます。プレビューの画像は <code>previews/</code> にあります。</p>
 </main>
 </body>
 </html>
