@@ -32,7 +32,6 @@ img{max-width:100%}
     radial-gradient(75% 42% at 90% 100%, rgba(201,60,147,.07), transparent 70%),
     radial-gradient(60% 35% at 30% 100%, rgba(250,75,56,.06), transparent 70%);
   --float-bg:rgba(255,255,255,.86);
-  --launch-bg:#1E1517; --launch-ink:#FFFFFF;
   --bubble:#231815; --bubble-ink:#FFFFFF;
   --ok:#1F7A45; --ok-tint:#E5F4EA; --cool:#245A8E; --cool-tint:#E8F0FA;
   --t-red-bg:#FFE7E1; --t-red-fg:#B23A27;
@@ -60,7 +59,6 @@ img{max-width:100%}
       radial-gradient(75% 42% at 90% 100%, rgba(201,60,147,.08), transparent 70%),
       radial-gradient(60% 35% at 30% 100%, rgba(250,75,56,.06), transparent 70%);
     --float-bg:rgba(38,33,34,.86);
-  --launch-bg:#2B2325;
     --bubble:#EFE6E1; --bubble-ink:#1C1415;
     --ok:#74D39E; --ok-tint:#16301F; --cool:#93BDEB; --cool-tint:#17283A;
     --t-red-bg:#3A221E; --t-red-fg:#FF9C88;
@@ -87,7 +85,6 @@ img{max-width:100%}
     radial-gradient(75% 42% at 90% 100%, rgba(201,60,147,.08), transparent 70%),
     radial-gradient(60% 35% at 30% 100%, rgba(250,75,56,.06), transparent 70%);
   --float-bg:rgba(38,33,34,.86);
-  --launch-bg:#2B2325;
   --bubble:#EFE6E1; --bubble-ink:#1C1415;
   --ok:#74D39E; --ok-tint:#16301F; --cool:#93BDEB; --cool-tint:#17283A;
   --t-red-bg:#3A221E; --t-red-fg:#FF9C88;
@@ -118,31 +115,34 @@ button{cursor:pointer}
 .page-note span{font-size:12.5px;color:var(--ink-3);line-height:1.7}
 
 /* ---------- launcher ----------
-   A dark glass pill with a living orb: the brand gradient lives in the orb and in the warm glow
-   beneath, so the button reads as "the AI" without a mascot or an icon. */
+   A speech bubble whose tail points into the corner. Inside, three lines write themselves out
+   and fade, over and over, like an AI composing a reply: it says "chat" at a glance and the
+   steady motion catches the eye of a shopper who hasn't noticed it yet. */
 .launch{
   position:fixed; z-index:30;
-  right:calc(24px + env(safe-area-inset-right,0px)); bottom:calc(24px + env(safe-area-inset-bottom,0px));
-  height:56px;padding:0 22px 0 10px;border-radius:999px;
-  border:1px solid transparent;
-  background:
-    linear-gradient(var(--launch-bg),var(--launch-bg)) padding-box,
-    linear-gradient(135deg,rgba(255,255,255,.40),rgba(255,255,255,.04) 45%,rgba(255,255,255,.20)) border-box;
-  color:var(--launch-ink);
-  display:flex;align-items:center;gap:11px;
+  right:calc(24px + env(safe-area-inset-right,0px)); bottom:calc(30px + env(safe-area-inset-bottom,0px));
+  height:58px;padding:0 22px 0 18px;
+  border:0;border-radius:24px 24px 8px 24px;
+  background:var(--cta);color:var(--on-cta);
+  display:flex;align-items:center;gap:12px;
   font-size:15px;font-weight:700;letter-spacing:.02em;
-  box-shadow:-10px 12px 28px -12px rgba(255,106,61,.60),10px 14px 30px -12px rgba(201,60,147,.55),0 2px 6px rgba(35,24,21,.18);
+  box-shadow:0 14px 30px -12px rgba(208,46,90,.65),0 2px 6px rgba(35,24,21,.16);
   transition:transform .25s var(--ease),box-shadow .25s ease,opacity .2s,visibility 0s;
 }
-.launch:hover{box-shadow:-10px 14px 34px -10px rgba(255,106,61,.75),10px 16px 36px -10px rgba(201,60,147,.70),0 2px 6px rgba(35,24,21,.18)}
-.orb{position:relative;flex:none;width:36px;height:36px;border-radius:50%;overflow:hidden;
-  box-shadow:0 0 16px rgba(255,106,61,.55),inset 0 0 0 1px rgba(255,255,255,.22)}
-/* the colour turns; the highlight on top stays put, so it reads as a lit sphere */
-.orb i{position:absolute;inset:-30%;background:conic-gradient(from 0deg,#FF6A3D,#F0405A,#C93C93,#FF9A6A,#FFC27A,#FF6A3D);filter:blur(5px);animation:orb-turn 8s linear infinite}
-.orb::after{content:"";position:absolute;inset:0;border-radius:50%;
-  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.9) 0 7%,rgba(255,255,255,.28) 20%,transparent 42%),
-             radial-gradient(circle at 50% 120%,rgba(30,10,20,.35),transparent 60%)}
-@keyframes orb-turn{to{transform:rotate(1turn)}}
+/* the tail: a small triangle off the bottom-right corner, in the gradient's end colour */
+.launch::after{content:"";position:absolute;right:6px;bottom:-9px;width:16px;height:12px;background:#D02E5A;clip-path:polygon(0 0,100% 0,100% 100%)}
+.launch:hover{box-shadow:0 18px 36px -12px rgba(208,46,90,.8),0 2px 6px rgba(35,24,21,.16)}
+.write{flex:none;width:24px;display:flex;flex-direction:column;gap:4px}
+.write i{display:block;height:3.5px;border-radius:2px;background:currentColor;transform-origin:left center;animation:write-line 3.2s var(--ease) infinite}
+.write i:nth-child(1){width:100%}
+.write i:nth-child(2){width:78%;animation-delay:.28s}
+.write i:nth-child(3){width:52%;animation-delay:.56s}
+@keyframes write-line{
+  0%{transform:scaleX(0);opacity:1}
+  16%{transform:scaleX(1);opacity:1}
+  72%{transform:scaleX(1);opacity:1}
+  86%,100%{transform:scaleX(1);opacity:0}
+}
 /* the panel opens over the launcher, anchored to its corner; the panel's own × closes it */
 .chat-open .launch{opacity:0;transform:scale(.85);visibility:hidden;pointer-events:none;transition:transform .2s,opacity .15s,visibility 0s linear .2s}
 .launch:hover{transform:translateY(-2px)}
@@ -381,6 +381,8 @@ button{cursor:pointer}
   .cb.expand{display:none}
 }
 @media (prefers-reduced-motion:reduce){
+  /* the launcher's lines stay written out instead of finishing the loop faded */
+  .write i{animation:none !important}
   *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
 }
 </style>
@@ -393,7 +395,7 @@ button{cursor:pointer}
 </main>
 
 <button type="button" class="launch" id="launch" aria-controls="panel" aria-expanded="false">
-  <span class="orb" aria-hidden="true"><i></i></span>
+  <span class="write" aria-hidden="true"><i></i><i></i><i></i></span>
   <span id="launchText">ココAIに相談</span>
   <span class="badge" id="badge" hidden>0</span>
 </button>
