@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+/* base reset (the claude.ai artifact host supplied this; GitHub Pages does not) */
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>ココAI 案D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&family=Noto+Sans+JP:wght@400;500;700&family=Outfit:wght@600;700&display=swap">
+<style>
+/* Layout (案D "Concierge"): an empty store page; a round button with a rotating suggestion card at the
+   bottom right opens a bottom sheet. No chat log: one question per screen, answered with big tiles,
+   with a back button and a progress bar. Results lead with one best match. Typing stays available
+   in the bar at the bottom for anyone who prefers words. */
+:root{
+  --page:#F6F1EE; --page-ink:#5B504A; --page-ink-2:#766A63; --scrim:rgba(28,18,12,.32);
+  --bg:#F6F3EF; --card:#FFFFFF; --card-2:#F1ECE7; --line:#E6DFD8; --line-2:#D6CCC4;
+  --ink:#1C1714; --ink-2:#554C46; --ink-3:#72675F;
+  --cta:#D9361F; --cta-hover:#C42E19; --on-cta:#FFFFFF; --coral-ink:#C42E19; --coral-tint:#FFE9E3;
+  --ok:#1F7A45; --ok-tint:#E2F3E8; --cool:#245A8E;
+  /* bento tiles: soft fills, dark text, a big kanji in a deeper tone */
+  --t1:#FFE0D7; --t1g:#F4A08C;
+  --t2:#FFEDBF; --t2g:#EBC25A;
+  --t3:#D4F1E3; --t3g:#7FCDA8;
+  --t4:#1C1714; --t4g:#3A322D; --t4ink:#FFFFFF;
+  --heat:#E8432C; --heat-off:#E6DFD8;
+  --shadow:0 -24px 60px -24px rgba(40,18,10,.35),0 0 0 1px rgba(40,18,10,.05);
+  --shadow-sm:0 12px 28px -14px rgba(40,18,10,.4);
+  --round:'M PLUS Rounded 1c','Noto Sans JP','Hiragino Maru Gothic ProN',system-ui,sans-serif;
+  --body:'Noto Sans JP','Hiragino Sans','Yu Gothic UI',system-ui,sans-serif;
+  --num:'Outfit','Noto Sans JP',system-ui,sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#121011; --page-ink:#CDC1BB; --page-ink-2:#A3978F; --scrim:rgba(0,0,0,.55);
+    --bg:#171412; --card:#221E1B; --card-2:#2B2623; --line:#36302C; --line-2:#4A423D;
+    --ink:#F6F0EB; --ink-2:#D3C8C1; --ink-3:#A99D95;
+    --coral-ink:#FF8E7A; --coral-tint:#3A221C; --ok:#74D39E; --ok-tint:#16301F; --cool:#93BDEB;
+    --t1:#3A2420; --t1g:#6E3A2E; --t2:#352A14; --t2g:#6A5320; --t3:#16302A; --t3g:#2C5E4A; --t4:#F6F0EB; --t4g:#D9D0C9; --t4ink:#1C1714;
+    --heat-off:#4A423D;
+    --shadow:0 -24px 60px -24px rgba(0,0,0,.8),0 0 0 1px #36302C; --shadow-sm:0 12px 28px -14px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#121011; --page-ink:#CDC1BB; --page-ink-2:#A3978F; --scrim:rgba(0,0,0,.55);
+  --bg:#171412; --card:#221E1B; --card-2:#2B2623; --line:#36302C; --line-2:#4A423D;
+  --ink:#F6F0EB; --ink-2:#D3C8C1; --ink-3:#A99D95;
+  --coral-ink:#FF8E7A; --coral-tint:#3A221C; --ok:#74D39E; --ok-tint:#16301F; --cool:#93BDEB;
+  --t1:#3A2420; --t1g:#6E3A2E; --t2:#352A14; --t2g:#6A5320; --t3:#16302A; --t3g:#2C5E4A; --t4:#F6F0EB; --t4g:#D9D0C9; --t4ink:#1C1714;
+  --heat-off:#4A423D;
+  --shadow:0 -24px 60px -24px rgba(0,0,0,.8),0 0 0 1px #36302C; --shadow-sm:0 12px 28px -14px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+
+html,body{height:100%}
+body{
+  background:var(--page); color:var(--page-ink); font-family:var(--body); font-size:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-font-smoothing:antialiased;
+}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--cta);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums}
+
+.page-note{padding-block:28px;display:flex;flex-direction:column;gap:4px;max-width:520px}
+.page-note strong{font-size:13px;font-weight:700}
+.page-note span{font-size:12.5px;color:var(--page-ink-2);line-height:1.7}
+
+/* ---------- launcher: a round button plus a suggestion card that changes every few seconds ---------- */
+.dock{position:fixed;z-index:30;right:calc(24px + env(safe-area-inset-right,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));display:flex;align-items:flex-end;gap:12px;transition:opacity .2s,transform .25s var(--ease),visibility 0s}
+.chat-open .dock{opacity:0;transform:translateY(12px);visibility:hidden;pointer-events:none;transition:opacity .15s,transform .2s,visibility 0s linear .2s}
+.peek{position:relative;width:min(250px,calc(100vw - 120px));height:68px;border-radius:20px 20px 6px 20px;background:var(--card);box-shadow:var(--shadow-sm),0 0 0 1px var(--line);overflow:hidden}
+.peek[hidden]{display:none}
+.peek-item{position:absolute;inset:0;display:flex;align-items:center;gap:12px;padding:0 34px 0 12px;border:0;background:none;text-align:left;color:var(--ink);transition:transform .45s var(--ease),opacity .35s ease}
+.peek-item.out{transform:translateY(-100%);opacity:0}
+.peek-item.wait{transform:translateY(100%);opacity:0;transition:none}
+.peek-item .k{flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-family:var(--round);font-size:24px;font-weight:800;color:var(--ink)}
+.peek-item b{display:block;font-family:var(--round);font-size:14.5px;font-weight:800;line-height:1.35}
+.peek-item small{display:block;font-size:12px;line-height:1.4;color:var(--ink-3)}
+.peek-x{position:absolute;z-index:2;top:4px;right:4px;width:28px;height:28px;border:0;border-radius:8px;background:none;color:var(--ink-3);display:grid;place-items:center}
+.peek-x:hover{background:var(--card-2);color:var(--ink)}
+.fab{position:relative;flex:none;width:64px;height:64px;border-radius:50%;border:0;padding:0;background:var(--cta);box-shadow:0 14px 30px -10px rgba(217,54,31,.7);display:grid;place-items:center;transition:transform .2s var(--ease)}
+.fab:hover{transform:scale(1.05)}
+.fab:active{transform:scale(.96)}
+/* four mini tiles that keep trading places: the bento grid in miniature */
+.mini{position:relative;width:28px;height:28px}
+.mini i{position:absolute;width:12px;height:12px;border-radius:4px;background:#fff;animation:shuffle 4s var(--ease) infinite}
+.mini i:nth-child(1){left:0;top:0;opacity:1}
+.mini i:nth-child(2){left:16px;top:0;opacity:.6}
+.mini i:nth-child(3){left:16px;top:16px;opacity:.85}
+.mini i:nth-child(4){left:0;top:16px;opacity:.45}
+@keyframes shuffle{0%,20%{transform:translate(0,0)}25%,45%{transform:translate(16px,0)}50%,70%{transform:translate(16px,16px)}75%,95%{transform:translate(0,16px)}100%{transform:translate(0,0)}}
+.mini i:nth-child(2){animation-name:shuffle2}.mini i:nth-child(3){animation-name:shuffle3}.mini i:nth-child(4){animation-name:shuffle4}
+@keyframes shuffle2{0%,20%{transform:translate(0,0)}25%,45%{transform:translate(0,16px)}50%,70%{transform:translate(-16px,16px)}75%,95%{transform:translate(-16px,0)}100%{transform:translate(0,0)}}
+@keyframes shuffle3{0%,20%{transform:translate(0,0)}25%,45%{transform:translate(-16px,0)}50%,70%{transform:translate(-16px,-16px)}75%,95%{transform:translate(0,-16px)}100%{transform:translate(0,0)}}
+@keyframes shuffle4{0%,20%{transform:translate(0,0)}25%,45%{transform:translate(0,-16px)}50%,70%{transform:translate(16px,-16px)}75%,95%{transform:translate(16px,0)}100%{transform:translate(0,0)}}
+.badge{position:absolute;top:-4px;right:-4px;min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:999px;background:var(--ink);color:var(--card);font-size:12px;font-weight:800;display:grid;place-items:center;border:2px solid var(--page);font-family:var(--num)}
+
+/* ---------- bottom sheet ---------- */
+.scrim{position:fixed;inset:0;z-index:31;background:var(--scrim);opacity:0;visibility:hidden;transition:opacity .25s,visibility 0s linear .25s}
+.sheet{
+  position:fixed;z-index:32;right:calc(24px + env(safe-area-inset-right,0px));bottom:0;
+  width:min(440px,calc(100vw - 48px));height:min(780px,calc(100dvh - 40px));
+  background:var(--bg);color:var(--ink);border-radius:28px 28px 0 0;box-shadow:var(--shadow);overflow:hidden;
+  display:flex;flex-direction:column;
+  transform:translateY(105%);visibility:hidden;
+  transition:transform .4s var(--ease),visibility 0s linear .4s;
+}
+.sheet.is-open{transform:none;visibility:visible;transition-delay:0s}
+.grab{flex:none;width:40px;height:5px;border-radius:3px;background:var(--line-2);margin:8px auto 0}
+
+.head{flex:none;display:flex;align-items:center;gap:6px;padding:6px 12px 8px}
+.back{height:40px;padding:0 14px 0 10px;border:0;border-radius:999px;background:var(--card);box-shadow:0 0 0 1px var(--line);font-size:14px;font-weight:700;display:flex;align-items:center;gap:4px}
+.back[hidden]{display:none}
+.back:hover{background:var(--card-2)}
+.head-title{flex:1;min-width:0;font-family:var(--round);font-size:15px;font-weight:800;padding-left:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.back:not([hidden]) + .head-title{text-align:center;padding-left:0}
+.x{width:40px;height:40px;border:0;border-radius:50%;background:var(--card);box-shadow:0 0 0 1px var(--line);display:grid;place-items:center;flex:none}
+.x:hover{background:var(--card-2)}
+@media (pointer:coarse){.back,.x{height:44px}.x{width:44px}}
+.progress{flex:none;display:flex;align-items:center;gap:10px;padding:0 20px 8px}
+.progress[hidden]{display:none}
+.progress .bar{flex:1;height:6px;border-radius:999px;background:var(--line);overflow:hidden}
+.progress .bar i{display:block;height:100%;border-radius:inherit;background:var(--cta);transition:width .4s var(--ease)}
+.progress span{font-size:12.5px;font-weight:700;color:var(--ink-3);font-family:var(--num)}
+
+.main{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin}
+.screen{padding:8px 20px 24px;display:flex;flex-direction:column;gap:16px}
+.screen.fwd{animation:in-fwd .3s var(--ease) backwards}
+.screen.bwd{animation:in-bwd .3s var(--ease) backwards}
+@keyframes in-fwd{from{opacity:0;transform:translateX(28px)}}
+@keyframes in-bwd{from{opacity:0;transform:translateX(-28px)}}
+.screen h2{margin:4px 0 0;font-family:var(--round);font-size:26px;font-weight:800;line-height:1.4;letter-spacing:.01em;word-break:keep-all;overflow-wrap:anywhere;outline:none}
+.screen .lead{margin:-8px 0 0;font-size:14px;line-height:1.7;color:var(--ink-2)}
+.eyebrow{font-size:13px;font-weight:700;color:var(--ink-3);margin-bottom:-12px}
+.query{align-self:flex-start;font-size:13px;color:var(--ink-2);background:var(--card);box-shadow:0 0 0 1px var(--line);padding:4px 12px;border-radius:999px}
+
+/* bento home */
+.bento{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto;gap:10px}
+.tile{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:4px;min-height:132px;padding:16px;border:0;border-radius:24px;text-align:left;color:var(--ink);transition:transform .2s var(--ease),box-shadow .2s}
+.tile:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+.tile:active{transform:scale(.98)}
+.tile b{position:relative;font-family:var(--round);font-size:19px;font-weight:800;line-height:1.35;word-break:keep-all;line-break:strict}
+.tile small{position:relative;font-size:12.5px;line-height:1.55;color:var(--ink-2)}
+/* the big kanji is the tile's picture: kept faint so the words on top stay easy to read */
+.tile .g{position:absolute;right:-8px;top:-18px;font-family:var(--round);font-size:100px;font-weight:800;line-height:1;pointer-events:none;opacity:.5}
+.tile.big{grid-row:span 2;min-height:274px}
+.tile.big b{font-size:22px}
+.tile.big .g{font-size:150px;top:-8px;right:-14px}
+.tile.wide{grid-column:span 2;min-height:84px;flex-direction:row;align-items:center;justify-content:space-between}
+.tile.wide .g{font-size:84px;top:-12px;right:auto;left:auto;right:56px}
+.tile.c1{background:var(--t1)}.tile.c1 .g{color:var(--t1g)}
+.tile.c2{background:var(--t2)}.tile.c2 .g{color:var(--t2g)}
+.tile.c3{background:var(--t3)}.tile.c3 .g{color:var(--t3g)}
+.tile.c4{background:var(--t4);color:var(--t4ink)}.tile.c4 .g{color:var(--t4g)}.tile.c4 small{color:var(--t4ink);opacity:.8}
+.tile .arrow{position:relative;font-size:22px;font-weight:700}
+.textlink{align-self:center;border:0;background:none;font-size:13.5px;font-weight:700;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px;padding:8px}
+
+/* choice tiles for each question */
+.choices{display:grid;gap:10px}
+.choices.c3{grid-template-columns:repeat(3,1fr)}
+.choices.c2{grid-template-columns:repeat(2,1fr)}
+.choice{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:6px;min-height:92px;padding:14px 16px;border:2px solid transparent;border-radius:20px;background:var(--card);box-shadow:0 0 0 1px var(--line);text-align:left;transition:border-color .15s,transform .15s,background .15s}
+.choice:hover{border-color:var(--line-2)}
+.choice:active{transform:scale(.97)}
+.choice.on{border-color:var(--cta);background:var(--coral-tint);box-shadow:none}
+.choice b{font-family:var(--round);font-size:20px;font-weight:800;line-height:1.3}
+.choice small{font-size:12.5px;color:var(--ink-3);line-height:1.45}
+.choices.c3 .choice{align-items:center;text-align:center;min-height:84px}
+.choice .big{font-family:var(--num);font-size:32px;font-weight:700;line-height:1}
+.choice .big em{font-style:normal;font-family:var(--round);font-size:15px;font-weight:800;margin-left:2px}
+.heat{display:flex;gap:4px}
+.heat i{width:18px;height:8px;border-radius:4px;background:var(--heat-off)}
+.heat i.f{background:var(--heat)}
+
+/* building: tiles assembling into a set */
+.build{display:flex;flex-direction:column;align-items:center;gap:22px;padding:40px 0 10px;text-align:center}
+.assemble{display:grid;grid-template-columns:repeat(3,56px);gap:8px}
+.assemble i{width:56px;height:56px;border-radius:16px;animation:pop .9s var(--ease) infinite alternate;animation-delay:calc(var(--n) * 90ms)}
+@keyframes pop{0%{transform:scale(.4);opacity:.15}60%,100%{transform:none;opacity:1}}
+.build h2{font-size:22px}
+.build .now{font-size:14px;font-weight:700;color:var(--ink-2);min-height:1.6em}
+
+/* results: one best match, two alternatives */
+.best{display:flex;flex-direction:column;border-radius:26px;background:var(--card);box-shadow:0 0 0 1px var(--line),var(--shadow-sm);overflow:hidden}
+.best .photos{display:grid;grid-template-columns:2fr 1fr 1fr;grid-template-rows:72px 72px;gap:4px;padding:4px}
+.ph{border-radius:14px;background:linear-gradient(140deg,var(--card-2),var(--line))}
+.photos .ph:first-child{grid-row:span 2;border-radius:22px 10px 10px 14px}
+.photos .more{display:grid;place-items:center;font-family:var(--num);font-size:14px;font-weight:700;color:var(--ink-2)}
+.best .in{padding:14px 18px 18px;display:flex;flex-direction:column;gap:10px}
+.match{align-self:flex-start;font-family:var(--round);font-size:12.5px;font-weight:800;color:var(--on-cta);background:var(--cta);padding:3px 12px;border-radius:999px;letter-spacing:.04em}
+.best h3{margin:0;font-family:var(--round);font-size:21px;font-weight:800;line-height:1.4;line-break:strict}
+.facts{display:flex;flex-wrap:wrap;gap:6px}
+.facts span{font-size:12.5px;font-weight:700;color:var(--ink-2);background:var(--card-2);padding:3px 10px;border-radius:999px}
+.facts .ok{color:var(--ok);background:var(--ok-tint)}
+.facts .over{color:var(--coral-ink);background:var(--coral-tint)}
+.facts .cool{color:var(--cool)}
+.best .price{font-family:var(--num);font-size:34px;font-weight:700;letter-spacing:-.015em;line-height:1.1}
+.best .price small{font-family:var(--body);font-size:13px;font-weight:500;color:var(--ink-3);margin-left:4px}
+.best .btns{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}
+.btn{height:52px;border-radius:16px;font-size:15px;font-weight:700;border:0;transition:background .15s,transform .15s}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--cta);color:var(--on-cta)}
+.btn.primary:hover{background:var(--cta-hover)}
+.btn.primary:disabled{opacity:.4;cursor:default}
+.btn.soft{background:var(--card-2);color:var(--ink)}
+.btn.soft:hover{background:var(--line)}
+.sub-h{font-family:var(--round);font-size:16px;font-weight:800;margin:6px 0 -6px}
+.alts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.alt{display:flex;flex-direction:column;gap:6px;padding:10px 10px 14px;border:0;border-radius:20px;background:var(--card);box-shadow:0 0 0 1px var(--line);text-align:left;transition:box-shadow .15s,transform .15s}
+.alt:hover{box-shadow:0 0 0 1px var(--line-2),var(--shadow-sm)}
+.alt:active{transform:scale(.98)}
+.alt .strip{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.alt .strip .ph{aspect-ratio:1}
+.alt b{font-family:var(--round);font-size:14.5px;font-weight:800;line-height:1.45;padding:0 4px;line-break:strict}
+.alt .num{font-size:20px;font-weight:700;padding:0 4px}
+.alt .fit{font-size:12px;font-weight:700;padding:0 4px}
+.fit.ok{color:var(--ok)}.fit.over{color:var(--coral-ink)}
+.tweaks{display:flex;flex-wrap:wrap;gap:8px}
+.tweak{height:42px;padding:0 16px;border-radius:999px;border:0;background:var(--card);box-shadow:0 0 0 1px var(--line);font-size:13.5px;font-weight:700;color:var(--ink);transition:box-shadow .15s}
+.tweak:hover{box-shadow:0 0 0 1.5px var(--ink-3)}
+
+/* product grid */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.prod{display:flex;flex-direction:column;gap:6px;padding:6px 6px 10px;border-radius:20px;background:var(--card);box-shadow:0 0 0 1px var(--line)}
+.prod .pic{aspect-ratio:1;border-radius:15px;background:linear-gradient(140deg,var(--card-2),var(--line));position:relative}
+.off{position:absolute;top:6px;left:6px;font-family:var(--num);font-size:12px;font-weight:700;background:var(--cta);color:#fff;border-radius:999px;padding:1px 8px}
+.prod b{font-size:13px;font-weight:700;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:3em;padding:0 4px}
+.prod-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 4px}
+.prod-foot .p{display:flex;flex-direction:column;line-height:1.25}
+.prod-foot .p strong{font-family:var(--num);font-size:17px;font-weight:700;color:var(--coral-ink)}
+.prod-foot .p strong.plain{color:var(--ink)}
+.prod-foot .p s{font-family:var(--num);font-size:12px;color:var(--ink-3)}
+.add{height:38px;padding:0 14px;border-radius:999px;border:0;background:var(--card-2);font-size:13px;font-weight:700;color:var(--ink);transition:background .15s}
+.add:hover{background:var(--line)}
+.add.done{background:var(--ok-tint);color:var(--ok)}
+
+/* how it works */
+.facts-list{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.facts-list li{padding:16px 18px;border-radius:20px;background:var(--card);box-shadow:0 0 0 1px var(--line);font-size:14px;line-height:1.7;color:var(--ink-2)}
+.facts-list b{display:block;font-family:var(--round);font-size:15.5px;font-weight:800;color:var(--ink);margin-bottom:2px}
+
+/* set detail */
+.d-head{display:flex;flex-direction:column;gap:6px}
+.d-head small{font-size:12.5px;font-weight:700;color:var(--coral-ink)}
+.d-head h2{font-size:22px}
+.d-head p{margin:0;font-size:13.5px;line-height:1.75;color:var(--ink-2)}
+.lines{margin:0;padding:0 14px;list-style:none;border-radius:22px;background:var(--card);box-shadow:0 0 0 1px var(--line)}
+.line{display:grid;grid-template-columns:22px 52px minmax(0,1fr);gap:12px;align-items:start;padding:14px 0;border-bottom:1px solid var(--line);transition:opacity .2s}
+.line:last-child{border-bottom:0}
+.line.off-line{opacity:.45}
+.line input[type=checkbox]{width:20px;height:20px;margin:16px 0 0;accent-color:var(--cta);cursor:pointer}
+.line .ph{width:52px;height:52px}
+.li{min-width:0;display:flex;flex-direction:column;gap:6px}
+.li-name{font-size:14px;font-weight:700;line-height:1.5}
+.li-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--ink-3)}
+.frozen{font-size:12px;font-weight:700;color:var(--cool);background:var(--card-2);padding:0 6px;border-radius:5px}
+.li-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.stepper{display:inline-flex;align-items:center;border-radius:999px;background:var(--card-2);height:38px}
+.stepper button{width:38px;height:38px;border:0;background:none;border-radius:999px;font-size:18px;font-weight:700;line-height:1;color:var(--ink)}
+.stepper button:hover{background:var(--line)}
+.stepper button:disabled{color:var(--line-2);cursor:default;background:none}
+.stepper output{min-width:3ch;text-align:center;font-family:var(--num);font-size:15px;font-weight:700}
+.li-total{font-family:var(--num);font-size:16px;font-weight:700}
+
+/* done */
+.done-scr{display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:36px 0 8px}
+.check{width:88px;height:88px;border-radius:50%;background:var(--ok-tint);color:var(--ok);display:grid;place-items:center;font-size:44px;font-weight:800;animation:check-in .5s var(--ease) backwards}
+@keyframes check-in{from{transform:scale(.5);opacity:0}}
+.done-scr h2{font-size:24px}
+.done-scr p{margin:0;font-size:14px;color:var(--ink-2);line-height:1.7}
+.done-btns{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:8px}
+
+/* footer: the always-there text bar, or a screen's own action bar */
+.foot{flex:none;padding:10px 16px 14px;border-top:1px solid var(--line);background:var(--bg)}
+.ask-bar{display:flex;align-items:center;gap:8px;height:54px;padding:0 6px 0 18px;border-radius:18px;background:var(--card);box-shadow:0 0 0 1px var(--line-2)}
+.ask-bar:focus-within{box-shadow:0 0 0 2px var(--cta)}
+.ask-bar input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-size:15.5px}
+.ask-bar input::placeholder{color:var(--ink-3)}
+.ask-bar button{flex:none;height:42px;padding:0 16px;border:0;border-radius:13px;background:var(--card-2);color:var(--ink-3);font-size:14px;font-weight:700;transition:background .2s,color .2s}
+.ask-bar button.ready{background:var(--cta);color:#fff}
+.fine{margin:8px 0 0;text-align:center;font-size:12px;line-height:1.5;color:var(--ink-3)}
+.total{display:flex;flex-direction:column;gap:10px}
+.ship{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink-2)}
+.ship b{font-family:var(--num);color:var(--ink)}
+.ship .bar{height:6px;border-radius:999px;background:var(--line);overflow:hidden}
+.ship .bar i{display:block;height:100%;border-radius:inherit;background:var(--cta);transition:width .4s var(--ease)}
+.ship.done{color:var(--ok);font-weight:700}
+.ship.done .bar i{background:var(--ok)}
+.sum{display:flex;align-items:center;gap:12px}
+.sum .t{flex:1;display:flex;flex-direction:column}
+.sum .t span{font-size:12.5px;color:var(--ink-3)}
+.sum .t strong{font-family:var(--num);font-size:26px;font-weight:700;line-height:1.15}
+.sum .t strong small{font-family:var(--body);font-size:12px;font-weight:500;color:var(--ink-3);margin-left:4px}
+.sum .btn{flex:0 0 58%}
+
+.toast{position:absolute;z-index:8;left:50%;top:64px;transform:translate(-50%,-10px);opacity:0;pointer-events:none;padding:11px 18px;border-radius:999px;background:var(--ink);color:var(--card);font-size:13.5px;font-weight:700;white-space:nowrap;box-shadow:var(--shadow-sm);transition:opacity .2s,transform .3s var(--ease)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* phones: a full-width bottom sheet over a dimmed page */
+@media (max-width:600px){
+  .chat-open .scrim{opacity:1;visibility:visible;transition-delay:0s}
+  .sheet{right:0;left:0;width:auto;height:calc(100dvh - 28px - env(safe-area-inset-top,0px));padding-bottom:env(safe-area-inset-bottom,0px)}
+  .screen{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+  .head,.foot{padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .screen h2{font-size:24px}
+  .tile{padding:14px}
+  .tile.big b{font-size:19px}
+  .tile b{font-size:17px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+  .mini i,.assemble i{animation:none !important;transform:none}
+}
+</style>
+</head>
+<body>
+
+<main class="page-note">
+  <strong>ココAI チャット プロトタイプ · 案D</strong>
+  <span>アシスタントを試すための空のページです。右下のボタンから開いてください。商品・価格はすべてサンプルです。</span>
+</main>
+
+<div class="dock" id="dock">
+  <div class="peek" id="peek">
+    <div id="peekItems"></div>
+    <button type="button" class="peek-x" id="peekX" aria-label="おすすめを閉じる"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <button type="button" class="fab" id="fab" aria-controls="sheet" aria-expanded="false" aria-label="ココAIに相談">
+    <span class="mini" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    <span class="badge" id="badge" hidden>0</span>
+  </button>
+</div>
+
+<div class="scrim" id="scrim" aria-hidden="true"></div>
+<section class="sheet" id="sheet" role="dialog" aria-label="ココAI お買い物アシスタント" inert>
+  <div class="grab" aria-hidden="true"></div>
+  <div class="head">
+    <button type="button" class="back" id="backBtn" hidden><span aria-hidden="true">‹</span>戻る</button>
+    <span class="head-title" id="headTitle">ココAI</span>
+    <button type="button" class="x" id="closeBtn" aria-label="閉じる"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="progress" id="progress" hidden><span class="bar"><i id="progBar"></i></span><span id="progTxt"></span></div>
+  <div class="main" id="main"></div>
+  <div class="foot" id="foot"></div>
+  <div class="toast" id="toast" role="status"></div>
+</section>
+
+<script>
+(() => {
+  document.documentElement.lang = 'ja';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = (s) => document.getElementById(s);
+  const yen = (n) => '¥' + Math.round(n).toLocaleString('ja-JP');
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const wait = (ms) => new Promise((r) => setTimeout(r, reduce ? 120 : ms));
+  const FREE_SHIP = 4980;
+  const CAT = {
+    soup: 'スープの素', fish: '魚団子', tofu: '豆腐・湯葉', noodle: '麺・春雨', sauce: 'つけだれ',
+    drink: '飲料', veg: '野菜・きのこ', meat: '肉', snack: 'お菓子',
+  };
+
+  /* ---------- sample data (same as 案A–C, so only the design differs) ---------- */
+  const SPICY = { n: '海底捞 牛油麻辣火鍋の素', c: 'soup', p: 594 };
+  const BASE = [
+    { id: 1, tag: '定番・手軽', title: 'きのこスープの火鍋スターター',
+      desc: 'やさしいきのこスープに湯葉と春雨、胡麻だれを合わせた基本のセット。ご予算に余裕が残ります。',
+      items: [
+        { n: '小肥羊 菌湯火鍋の素', c: 'soup', p: 648 },
+        { n: '海底捞 豆皮', c: 'tofu', p: 346 },
+        { n: '龍口 緑豆春雨 250g', c: 'noodle', p: 298 },
+        { n: 'えのき茸 200g', c: 'veg', p: 128 },
+        { n: '双葉 胡麻だれ（白）', c: 'sauce', p: 498 },
+        { n: '王老吉 涼茶 310ml', c: 'drink', p: 218, q: 2 },
+      ] },
+    { id: 2, tag: 'あっさり・具だくさん', title: '清湯スープと2種の魚団子セット',
+      desc: 'あっさりした清湯スープに、2種類の魚団子と湯葉。つけだれと飲み物も入っています。',
+      items: [
+        { n: '小肥羊 清湯火鍋の素', c: 'soup', p: 669 },
+        { n: 'NK 正宗福州魚丸', c: 'fish', p: 879, f: true },
+        { n: '郷音 八珍玉食（八種花様丸子）', c: 'fish', p: 1167, f: true },
+        { n: '海底捞 豆皮', c: 'tofu', p: 346 },
+        { n: '海底捞 極太さつまいも春雨', c: 'noodle', p: 320 },
+        { n: '双葉 胡麻だれ（白）', c: 'sauce', p: 498 },
+        { n: '王老吉 涼茶 310ml', c: 'drink', p: 218, q: 2 },
+      ] },
+    { id: 3, tag: '2種のスープ', title: 'トマト＆清湯の二色鍋セット',
+      desc: '辛くない2種のスープを食べ比べ。魚団子、冷凍豆腐、腐竹、春雨、胡麻だれまで揃います。',
+      items: [
+        { n: '小肥羊 清湯火鍋の素', c: 'soup', p: 669 },
+        { n: '海底捞 トマト火鍋の素', c: 'soup', p: 594 },
+        { n: 'NK 正宗福州魚丸', c: 'fish', p: 879, f: true },
+        { n: '冷凍豆腐 400g', c: 'tofu', p: 298, f: true },
+        { n: '腐竹（湯葉スティック）', c: 'tofu', p: 398 },
+        { n: '海底捞 極太さつまいも春雨', c: 'noodle', p: 320 },
+        { n: 'えのき茸 200g', c: 'veg', p: 128 },
+        { n: '双葉 胡麻だれ（白）', c: 'sauce', p: 498 },
+        { n: '王老吉 涼茶 310ml', c: 'drink', p: 218, q: 2 },
+      ] },
+  ];
+  const DEALS = [
+    { n: '海底捞 牛油麻辣火鍋の素 220g', c: 'soup', p: 594, was: 660 },
+    { n: '康師傅 紅焼牛肉麺 5食入', c: 'noodle', p: 680, was: 756 },
+    { n: '旺旺 雪餅 520g', c: 'snack', p: 598, was: 698 },
+    { n: '王老吉 涼茶 310ml × 6本', c: 'drink', p: 1180, was: 1308 },
+  ];
+  const RECENT = [
+    { n: 'NK 正宗福州魚丸', c: 'fish', p: 879 },
+    { n: '双葉 胡麻だれ（白）', c: 'sauce', p: 498 },
+    { n: '海底捞 豆皮', c: 'tofu', p: 346 },
+  ];
+  const SNACKS = [
+    { n: '旺旺 雪餅 520g', c: 'snack', p: 598, was: 698 },
+    { n: '徐福記 沙琪瑪 469g', c: 'snack', p: 548 },
+    { n: '衛龍 大面筋 102g', c: 'snack', p: 238 },
+  ];
+  const LISTS = { deals: DEALS, recent: RECENT, snacks: SNACKS };
+  const PEOPLE = [2, 3, 4, 5, 6, 8];
+  const SPICE = [
+    { v: 'none', t: '辛くない', s: 'お子さまも安心', h: 0 },
+    { v: 'mild', t: 'ピリ辛', s: 'ほんのり刺激', h: 1 },
+    { v: 'spicy', t: '辛口', s: 'しっかり麻辣', h: 3 },
+    { v: 'half', t: '半々', s: '鴛鴦鍋で両方', h: 2 },
+  ];
+  const BUDGET = [
+    { v: 3000, t: '¥3,000', s: 'お手頃に' }, { v: 5000, t: '¥5,000', s: 'ちょうどいい' },
+    { v: 8000, t: '¥8,000', s: 'しっかり' }, { v: 0, t: '指定なし', s: 'おまかせ' },
+  ];
+  const SPICE_LABEL = { none: '辛くない', mild: 'ピリ辛', spicy: '辛口', half: '半々（鴛鴦鍋）' };
+  const PEEKS = [
+    { k: '鍋', c: '--t1', t: '今夜は火鍋？', s: '人数に合わせてセットに', go: ['people'] },
+    { k: '割', c: '--t2', t: '本日のお得', s: 'セール中の商品をまとめて', go: ['products', { kind: 'deals' }] },
+    { k: '再', c: '--t3', t: '買い忘れはありませんか？', s: '最近見た商品をもう一度', go: ['products', { kind: 'recent' }] },
+  ];
+
+  /* ---------- state ---------- */
+  const state = { open: false, cart: 0, prefs: { people: 4, spice: 'none', budget: 5000 }, plans: [], bestId: 0, detail: null, stack: [], building: 0 };
+  const sheet = $('sheet'), main = $('main'), foot = $('foot');
+
+  /* ---------- launcher suggestion card: one suggestion at a time, sliding up every 4.5s ---------- */
+  let peekIdx = 0;
+  $('peekItems').innerHTML = PEEKS.map((p, i) => `
+    <button type="button" class="peek-item${i ? ' wait' : ''}" data-peek="${i}" ${i ? 'tabindex="-1" aria-hidden="true"' : ''}>
+      <span class="k" style="background:var(${p.c})" aria-hidden="true">${p.k}</span>
+      <span><b>${p.t}</b><small>${p.s}</small></span>
+    </button>`).join('');
+  const peekEls = [...document.querySelectorAll('.peek-item')];
+  if (!reduce) setInterval(() => {
+    if (state.open || $('peek').hidden || document.hidden) return;
+    const cur = peekEls[peekIdx], nxt = peekEls[(peekIdx + 1) % peekEls.length];
+    cur.classList.add('out'); cur.tabIndex = -1; cur.setAttribute('aria-hidden', 'true');
+    nxt.classList.remove('wait', 'out'); nxt.removeAttribute('tabindex'); nxt.removeAttribute('aria-hidden');
+    setTimeout(() => { cur.classList.remove('out'); cur.classList.add('wait'); }, 500);
+    peekIdx = (peekIdx + 1) % peekEls.length;
+  }, 4500);
+  $('peekItems').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-peek]');
+    if (!b) return;
+    const p = PEEKS[+b.dataset.peek];
+    setOpen(true);
+    state.stack = [{ name: 'home' }];
+    go(p.go[0], p.go[1] || {});
+  });
+  $('peekX').addEventListener('click', () => { $('peek').hidden = true; });
+
+  /* ---------- open / close ---------- */
+  function setOpen(v) {
+    state.open = v;
+    sheet.classList.toggle('is-open', v);
+    sheet.inert = !v;
+    document.body.classList.toggle('chat-open', v);
+    $('fab').setAttribute('aria-expanded', String(v));
+    $('dock').inert = v;
+    if (v && !state.stack.length) { state.stack = [{ name: 'home' }]; render('fwd'); }
+    if (!v) $('fab').focus({ preventScroll: true });
+    updateBadge();
+  }
+  $('fab').addEventListener('click', () => setOpen(true));
+  $('closeBtn').addEventListener('click', () => setOpen(false));
+  $('scrim').addEventListener('click', () => setOpen(false));
+  sheet.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (state.stack.length > 1) back(); else setOpen(false);
+  });
+  function updateBadge() {
+    const b = $('badge');
+    b.textContent = state.cart;
+    b.hidden = state.cart === 0 || state.open;
+  }
+  let toastTimer;
+  function toast(text) {
+    const t = $('toast');
+    t.textContent = text;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  /* ---------- navigation: one screen at a time ---------- */
+  function go(name, params = {}, { replace = false } = {}) {
+    if (replace) state.stack.pop();
+    state.stack.push({ name, params });
+    render('fwd');
+  }
+  function back() {
+    if (state.stack.length < 2) return;
+    state.stack.pop();
+    // never step back into the "building" moment
+    while (state.stack.length > 1 && state.stack[state.stack.length - 1].name === 'building') state.stack.pop();
+    render('bwd');
+  }
+  function home() { state.stack = [{ name: 'home' }]; render('bwd'); }
+  $('backBtn').addEventListener('click', back);
+
+  const STEPS = { people: 1, spice: 2, budget: 3 };
+  function render(dir) {
+    const cur = state.stack[state.stack.length - 1];
+    const scr = SCREENS[cur.name](cur.params || {});
+    $('headTitle').textContent = scr.title;
+    $('backBtn').hidden = state.stack.length < 2;
+    const step = STEPS[cur.name];
+    $('progress').hidden = !step;
+    if (step) { $('progBar').style.width = (step / 3) * 100 + '%'; $('progTxt').textContent = `${step} / 3`; }
+    main.innerHTML = `<div class="screen ${reduce ? '' : dir}">${scr.html}</div>`;
+    main.scrollTop = 0;
+    foot.innerHTML = scr.foot || askBar();
+    if (scr.after) scr.after();
+    wireAskBar();
+    // move focus to the new screen's heading so keyboard and screen-reader users land on it
+    const h = main.querySelector('h2');
+    if (h && state.open) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
+  }
+  function askBar() {
+    return `<form class="ask-bar" id="askForm"><label class="sr" for="askInput">ことばで相談する</label>
+      <input id="askInput" autocomplete="off" placeholder="ことばでも相談できます">
+      <button type="submit" id="askSend">相談</button></form>
+      <p class="fine">AIの回答は正確でない場合があります。価格・アレルギー情報は商品ページでご確認ください。</p>`;
+  }
+  function wireAskBar() {
+    const f = $('askForm');
+    if (!f) return;
+    const i = $('askInput'), b = $('askSend');
+    i.addEventListener('input', () => b.classList.toggle('ready', !!i.value.trim()));
+    f.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const t = i.value.trim();
+      if (!t || e.isComposing) return;
+      route(t);
+    });
+  }
+  /* typed words go to the screen that answers them */
+  function route(t) {
+    const p = state.prefs;
+    if (state.plans.length) {
+      if (/辛/.test(t)) { p.spice = 'spicy'; return go('building', { why: 'スープを辛口に入れ替えています' }); }
+      if (/肉/.test(t)) { p.meat = true; return go('building', { why: 'お肉を追加しています' }); }
+      if (/安|抑え/.test(t)) { p.lean = true; return go('building', { why: '価格を抑えています' }); }
+    }
+    if (/セール|お得|割引/.test(t)) return go('products', { kind: 'deals', q: t });
+    if (/できること|使い方|注意/.test(t)) return go('how');
+    if (/最近|見た商品|再開/.test(t)) return go('products', { kind: 'recent', q: t });
+    if (/鍋|パーティ|人で|人分|友人|家族/.test(t)) {
+      const n = t.match(/(\d+)\s*人/);
+      if (n) p.people = Math.min(12, Math.max(1, +n[1]));
+      return go(n ? 'spice' : 'people', { q: t });
+    }
+    return go('products', { kind: 'snacks', q: t });
+  }
+
+  /* ---------- plans ---------- */
+  function buildPlans(prefs) {
+    const k = prefs.people / 4;
+    return BASE.map((b) => {
+      let items = b.items.map((it) => ({ ...it }));
+      let tag = b.tag;
+      if (prefs.spice === 'spicy') items[items.findIndex((x) => x.c === 'soup')] = { ...SPICY };
+      else if (prefs.spice === 'half') { if (b.id === 3) { items[1] = { ...SPICY }; tag = '半々（鴛鴦鍋）'; } else items.splice(1, 0, { ...SPICY }); }
+      if (prefs.meat) items.splice(1, 0, { n: '冷凍 ラム肉スライス 500g', c: 'meat', p: 798, f: true, q: Math.ceil(prefs.people / 4) });
+      if (prefs.lean) items = items.filter((x) => x.c !== 'drink' && x.c !== 'veg');
+      items = items.map((x) => {
+        const base = x.q || 1;
+        const q = x.c === 'soup' ? (prefs.people > 6 ? 2 : 1) : x.c === 'meat' ? base : Math.max(1, Math.round(base * k));
+        return { ...x, q };
+      });
+      const total = items.reduce((s, x) => s + x.p * x.q, 0);
+      const count = items.reduce((s, x) => s + x.q, 0);
+      return { ...b, tag, items, total, count, cool: items.some((x) => x.f) };
+    });
+  }
+  function pickBest(plans, budget) {
+    if (!budget) return plans[1].id;
+    const fit = plans.filter((p) => p.total <= budget).sort((a, b) => b.total - a.total);
+    return (fit[0] || [...plans].sort((a, b) => a.total - b.total)[0]).id;
+  }
+  const fitOf = (p) => {
+    const b = state.prefs.budget;
+    if (!b) return null;
+    return p.total <= b ? { ok: true, t: 'ご予算内' } : { ok: false, t: `${yen(p.total - b)}オーバー` };
+  };
+  function addPlanToCart(plan, items) {
+    const count = items.reduce((s, x) => s + x.q, 0);
+    const total = items.reduce((s, x) => s + x.p * x.q, 0);
+    state.cart += count;
+    go('done', { title: plan.title, count, total });
+  }
+
+  /* ---------- screens ---------- */
+  const heat = (h) => `<span class="heat" aria-hidden="true">${[1, 2, 3].map((i) => `<i class="${i <= h ? 'f' : ''}"></i>`).join('')}</span>`;
+  const queryChip = (q) => (q ? `<span class="query">「${esc(q)}」</span>` : '');
+  const SCREENS = {
+    home: () => ({
+      title: 'ココAI',
+      html: `<p class="eyebrow">ココAI · お買い物アシスタント</p>
+        <h2>今日はどうしますか？</h2>
+        <div class="bento">
+          <button type="button" class="tile big c1" data-go="people"><span class="g" aria-hidden="true">鍋</span><b>火鍋パーティー</b><small>人数とご予算に合わせて、まとめて買えるセットを作ります</small></button>
+          <button type="button" class="tile c2" data-go="products" data-kind="deals"><span class="g" aria-hidden="true">割</span><b>本日のお得</b><small>セール中の商品</small></button>
+          <button type="button" class="tile c3" data-go="products" data-kind="recent"><span class="g" aria-hidden="true">再</span><b>買い物を再開</b><small>最近見た商品</small></button>
+          <button type="button" class="tile wide c4" data-focus-ask><span class="g" aria-hidden="true">話</span><span><b>ことばで相談する</b><br><small>下の欄に自由に書けます</small></span><span class="arrow" aria-hidden="true">↓</span></button>
+        </div>
+        <button type="button" class="textlink" data-go="how">ココAIでできること</button>`,
+    }),
+    people: (pr) => ({
+      title: '火鍋パーティー',
+      html: `${queryChip(pr.q)}<h2>何人で食べますか？</h2><p class="lead">人数に合わせて量を調整します。</p>
+        <div class="choices c3">${PEOPLE.map((n) => `<button type="button" class="choice${state.prefs.people === n ? ' on' : ''}" data-pick="people" data-v="${n}"><span class="big">${n}<em>${n === 8 ? '人〜' : '人'}</em></span></button>`).join('')}</div>`,
+    }),
+    spice: (pr) => ({
+      title: '火鍋パーティー',
+      html: `${queryChip(pr.q)}<h2>辛さはどうしますか？</h2><p class="lead">${state.prefs.people}人分で作ります。</p>
+        <div class="choices c2">${SPICE.map((s) => `<button type="button" class="choice${state.prefs.spice === s.v ? ' on' : ''}" data-pick="spice" data-v="${s.v}">${heat(s.h)}<b>${s.t}</b><small>${s.s}</small></button>`).join('')}</div>`,
+    }),
+    budget: () => ({
+      title: '火鍋パーティー',
+      html: `<h2>ご予算はいくらですか？</h2><p class="lead">${state.prefs.people}人分・${SPICE_LABEL[state.prefs.spice]}で作ります。</p>
+        <div class="choices c2">${BUDGET.map((b) => `<button type="button" class="choice${state.prefs.budget === b.v ? ' on' : ''}" data-pick="budget" data-v="${b.v}"><b class="${b.v ? 'num' : ''}" style="${b.v ? 'font-size:24px' : ''}">${b.t}</b><small>${b.s}</small></button>`).join('')}</div>`,
+    }),
+    building: (pr) => ({
+      title: 'セットを作成中',
+      html: `<div class="build"><div class="assemble" aria-hidden="true">${Array.from({ length: 9 }, (_, n) => `<i style="--n:${n};background:var(${['--t1', '--t2', '--t3', '--line-2'][n % 4]})"></i>`).join('')}</div>
+        <h2>セットを組み立てています</h2><p class="now" id="now" aria-live="polite">${esc(pr.why || 'ご要望を確認しています')}</p></div>`,
+      foot: '<p class="fine" style="margin:0">在庫と価格を確認しながら作っています。</p>',
+      after: async () => {
+        const token = ++state.building;
+        const lines = [pr.why || 'ご要望を確認しています', '在庫から商品を探しています', 'ご予算に合わせています'];
+        for (const l of lines) {
+          if (token !== state.building) return;
+          const el = $('now'); if (el) el.textContent = l;
+          await wait(650);
+        }
+        if (token !== state.building || state.stack[state.stack.length - 1].name !== 'building') return;
+        state.plans = buildPlans(state.prefs);
+        state.bestId = pickBest(state.plans, state.prefs.budget);
+        go('results', {}, { replace: true });
+      },
+    }),
+    results: () => {
+      const best = state.plans.find((p) => p.id === state.bestId);
+      const others = state.plans.filter((p) => p.id !== state.bestId);
+      const f = fitOf(best);
+      const n = best.items.length;
+      const photos = Array.from({ length: 5 }, (_, i) => (i === 4 && n > 5 ? `<span class="ph more">+${n - 4}</span>` : '<span class="ph"></span>')).join('');
+      const p = state.prefs;
+      return {
+        title: 'ぴったりのセット',
+        html: `<p class="eyebrow">${p.people}人分 · ${SPICE_LABEL[p.spice]} · ${p.budget ? 'ご予算' + yen(p.budget) : 'ご予算指定なし'}</p>
+          <h2>いちばんのおすすめはこちら</h2>
+          <article class="best">
+            <div class="photos" aria-hidden="true">${photos}</div>
+            <div class="in">
+              <span class="match">ベストマッチ</span>
+              <h3>${esc(best.title)}</h3>
+              <div class="facts"><span>${esc(best.tag)}</span><span>${best.count}点</span>${best.cool ? '<span class="cool">クール便</span>' : ''}${f ? `<span class="${f.ok ? 'ok' : 'over'}">${f.ok ? '✓ ' : ''}${f.t}</span>` : ''}</div>
+              <div class="price">${yen(best.total)}<small>税込</small></div>
+              <div class="btns"><button type="button" class="btn soft" data-detail="${best.id}">中身を見る</button><button type="button" class="btn primary" data-addplan="${best.id}">まとめてカートへ</button></div>
+            </div>
+          </article>
+          <p class="sub-h">ほかの案</p>
+          <div class="alts">${others.map((o) => { const of = fitOf(o); return `
+            <button type="button" class="alt" data-detail="${o.id}" aria-label="${esc(o.title)}、${yen(o.total)}${of ? '、' + of.t : ''}。中身を見る">
+              <span class="strip" aria-hidden="true"><span class="ph"></span><span class="ph"></span><span class="ph"></span></span>
+              <b>${esc(o.title)}</b><span class="num">${yen(o.total)}</span>${of ? `<span class="fit ${of.ok ? 'ok' : 'over'}">${of.t}</span>` : ''}
+            </button>`; }).join('')}</div>
+          <p class="sub-h">調整する</p>
+          <div class="tweaks"><button type="button" class="tweak" data-say="もっと辛くしたい">もっと辛く</button><button type="button" class="tweak" data-say="お肉を追加して">お肉を追加</button><button type="button" class="tweak" data-say="もう少し安く">もう少し安く</button><button type="button" class="tweak" data-go="people">条件を変える</button></div>`,
+      };
+    },
+    detail: (pr) => {
+      const plan = state.plans.find((p) => p.id === pr.id);
+      if (!state.detail || state.detail.plan.id !== plan.id) state.detail = { plan, items: plan.items.map((x) => ({ ...x, on: true })) };
+      return {
+        title: 'セットの中身',
+        html: `<div class="d-head"><small>${esc(plan.tag)}</small><h2>${esc(plan.title)}</h2><p>${esc(plan.desc)}</p></div>
+          <ul class="lines" id="lines">${state.detail.items.map((x, i) => `
+            <li class="line" data-line="${i}">
+              <input type="checkbox" ${x.on ? 'checked' : ''} id="ln-${i}" aria-label="${esc(x.n)}を選択">
+              <span class="ph" aria-hidden="true"></span>
+              <div class="li">
+                <label class="li-name" for="ln-${i}">${esc(x.n)}</label>
+                <span class="li-meta">${x.f ? '<span class="frozen">冷凍</span>' : ''}${CAT[x.c]} · 1点 ${yen(x.p)}</span>
+                <div class="li-row">
+                  <span class="stepper" role="group" aria-label="数量">
+                    <button type="button" data-q="-1" aria-label="数量を減らす">−</button>
+                    <output>${x.q}</output>
+                    <button type="button" data-q="1" aria-label="数量を増やす">＋</button>
+                  </span>
+                  <span class="li-total">${yen(x.p * x.q)}</span>
+                </div>
+              </div>
+            </li>`).join('')}</ul>`,
+        foot: `<div class="total"><div class="ship" id="ship"><span class="ship-txt"></span><span class="bar"><i></i></span></div>
+          <div class="sum"><span class="t"><span id="sumCount"></span><strong id="sumTotal"></strong></span><button type="button" class="btn primary" id="addAll">まとめてカートへ</button></div></div>`,
+        after: syncDetail,
+      };
+    },
+    done: (pr) => ({
+      title: 'カートに追加しました',
+      html: `<div class="done-scr"><span class="check" aria-hidden="true">✓</span>
+        <h2>${pr.count}点をカートに追加しました</h2><p>${esc(pr.title)} · <span class="num">${yen(pr.total)}</span>（税込）</p>
+        <div class="done-btns"><button type="button" class="btn primary" data-cart>カートを見る</button><button type="button" class="btn soft" data-to="results">ほかのセットも見る</button><button type="button" class="btn soft" data-home>最初の画面に戻る</button></div></div>`,
+      after: () => { updateBadge(); toast(`${pr.count}点をカートに追加しました`); },
+    }),
+    products: (pr) => {
+      const m = {
+        deals: { title: '本日のお得', h: '本日のセール商品です', lead: '「追加」でそのままカートに入ります。' },
+        recent: { title: '買い物を再開', h: '最近見た商品です', lead: '3点とも在庫があります。' },
+        snacks: { title: 'おすすめ', h: '合いそうな商品です', lead: '誰と食べるか教えていただければ、セットにまとめます。' },
+      }[pr.kind];
+      return {
+        title: m.title,
+        html: `${queryChip(pr.q)}<h2>${m.h}</h2><p class="lead">${m.lead}</p>
+          <div class="grid">${LISTS[pr.kind].map((x, i) => { const off = x.was ? Math.round((1 - x.p / x.was) * 100) : 0; return `
+            <div class="prod"><span class="pic">${off ? `<span class="off">${off}%OFF</span>` : ''}</span><b>${esc(x.n)}</b>
+              <span class="prod-foot"><span class="p"><strong class="${x.was ? '' : 'plain'}">${yen(x.p)}</strong>${x.was ? `<s>${yen(x.was)}</s>` : ''}</span>
+              <button type="button" class="add" data-add="${pr.kind}:${i}" aria-label="${esc(x.n)}をカートに追加">追加</button></span></div>`; }).join('')}</div>
+          <div class="tweaks"><button type="button" class="tweak" data-go="people">火鍋セットを作る</button></div>`,
+      };
+    },
+    how: () => ({
+      title: 'ココAIでできること',
+      html: `<h2>ココAIでできること</h2>
+        <ul class="facts-list">
+          <li><b>セットを提案します</b>料理やシーン、人数、ご予算を選ぶと、まとめてカートに入れられるセットを作ります。</li>
+          <li><b>在庫がある商品だけ</b>提案するのは、いま在庫がある商品だけです。価格はすべて税込です。</li>
+          <li><b>お会計はいつも通り</b>ご注文やお支払い情報の確認はできません。アレルギー情報は各商品ページでご確認ください。</li>
+        </ul>`,
+    }),
+  };
+
+  /* ---------- detail totals ---------- */
+  function syncDetail() {
+    const items = state.detail.items;
+    items.forEach((x, i) => {
+      const li = $('lines').children[i];
+      li.classList.toggle('off-line', !x.on);
+      li.querySelector('output').textContent = x.q;
+      li.querySelector('.li-total').textContent = yen(x.p * x.q);
+      li.querySelector('[data-q="-1"]').disabled = x.q <= 1 || !x.on;
+      li.querySelector('[data-q="1"]').disabled = x.q >= 20 || !x.on;
+    });
+    const on = items.filter((x) => x.on);
+    const total = on.reduce((s, x) => s + x.p * x.q, 0);
+    const count = on.reduce((s, x) => s + x.q, 0);
+    const left = FREE_SHIP - total;
+    const ship = $('ship');
+    ship.className = 'ship' + (left <= 0 ? ' done' : '');
+    ship.querySelector('.ship-txt').innerHTML = left <= 0 ? '✓ 送料無料の対象です' : `あと<b>${yen(left)}</b>で送料無料`;
+    ship.querySelector('.bar i').style.width = Math.min(100, (total / FREE_SHIP) * 100) + '%';
+    $('sumCount').textContent = `${count}点 合計`;
+    $('sumTotal').innerHTML = `${yen(total)}<small>税込</small>`;
+    $('addAll').disabled = count === 0;
+  }
+
+  /* ---------- taps ---------- */
+  sheet.addEventListener('click', async (e) => {
+    const t = e.target;
+    const pick = t.closest('[data-pick]');
+    if (pick) {
+      // show the choice land, then move on to the next question
+      pick.parentElement.querySelectorAll('.choice').forEach((c) => c.classList.toggle('on', c === pick));
+      const k = pick.dataset.pick, v = pick.dataset.v;
+      state.prefs[k] = k === 'spice' ? v : +v;
+      state.prefs.meat = false; state.prefs.lean = false;
+      await wait(220);
+      if (k === 'people') return go('spice');
+      if (k === 'spice') return go('budget');
+      return go('building');
+    }
+    const g = t.closest('[data-go]');
+    if (g) return go(g.dataset.go, g.dataset.kind ? { kind: g.dataset.kind } : {});
+    if (t.closest('[data-focus-ask]')) { const i = $('askInput'); if (i) i.focus(); return; }
+    const say = t.closest('[data-say]');
+    if (say) return route(say.dataset.say);
+    const d = t.closest('[data-detail]');
+    if (d) { state.detail = null; return go('detail', { id: +d.dataset.detail }); }
+    const ap = t.closest('[data-addplan]');
+    if (ap) { const plan = state.plans.find((p) => p.id === +ap.dataset.addplan); return addPlanToCart(plan, plan.items); }
+    if (t.closest('#addAll')) return addPlanToCart(state.detail.plan, state.detail.items.filter((x) => x.on));
+    const q = t.closest('[data-q]');
+    if (q) {
+      const x = state.detail.items[+q.closest('[data-line]').dataset.line];
+      x.q = Math.min(20, Math.max(1, x.q + +q.dataset.q));
+      return syncDetail();
+    }
+    const add = t.closest('[data-add]');
+    if (add && !add.classList.contains('done')) {
+      const [list, i] = add.dataset.add.split(':');
+      add.classList.add('done'); add.textContent = '追加済み'; add.setAttribute('aria-label', 'カートに追加済み');
+      state.cart += 1; updateBadge();
+      return toast(`${LISTS[list][+i].n}をカートに追加しました`);
+    }
+    if (t.closest('[data-home]')) return home();
+    const to = t.closest('[data-to]');
+    if (to) {
+      while (state.stack.length > 1 && state.stack[state.stack.length - 1].name !== to.dataset.to) state.stack.pop();
+      return render('bwd');
+    }
+    if (t.closest('[data-cart]')) return toast(`カートには${state.cart}点入っています（実際のストアではカートページへ）`);
+  });
+  sheet.addEventListener('change', (e) => {
+    const li = e.target.closest('[data-line]');
+    if (!li || e.target.type !== 'checkbox') return;
+    state.detail.items[+li.dataset.line].on = e.target.checked;
+    syncDetail();
+  });
+
+  if (location.hash === '#open') setOpen(true);
+})();
+</script>
+</body>
+</html>
