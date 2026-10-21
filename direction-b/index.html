@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+/* base reset (the claude.ai artifact host supplied this; GitHub Pages does not) */
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>ココAI 案B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap">
+<style>
+/* Layout (案B "Night"): an empty light store page; a dark pill launcher at the bottom right opens a
+   full-height dark side panel. The panel is one deliberate dark world in both themes: aurora light
+   drifts behind glass surfaces, results sit side by side to swipe and compare. */
+:root{
+  /* the store page around the panel follows the viewer's theme */
+  --page:#F6F1EE; --page-ink:#5B504A; --page-ink-2:#766A63;
+  /* the panel is always dark */
+  --bg:#0E0A0F; --bg-2:#18121B;
+  --glass:rgba(255,255,255,.06); --glass-2:rgba(255,255,255,.10); --glass-3:rgba(255,255,255,.16);
+  --hair:rgba(255,255,255,.10); --hair-2:rgba(255,255,255,.20);
+  --ink:#F7F1F3; --ink-2:rgba(247,241,243,.76); --ink-3:rgba(247,241,243,.58);
+  --grad:linear-gradient(110deg,#FF7A45 0%,#F0405A 48%,#C04BD6 100%);
+  --cta:linear-gradient(110deg,#D63A22 0%,#C42D5A 50%,#8F3BB5 100%); --on-cta:#FFFFFF;
+  --ok:#74DDA6; --over:#FF9C8C; --cool:#9CC8F5;
+  --a1:#FF6A3D; --a2:#E8407E; --a3:#9B4DF0;
+  --shadow:0 30px 70px -18px rgba(14,6,20,.55),0 0 0 1px rgba(255,255,255,.06);
+  --font:'Plus Jakarta Sans','Noto Sans JP','Hiragino Sans','Yu Gothic UI',system-ui,sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--page:#121011;--page-ink:#CDC1BB;--page-ink-2:#A3978F;color-scheme:dark}
+}
+:root[data-theme="dark"]{--page:#121011;--page-ink:#CDC1BB;--page-ink-2:#A3978F;color-scheme:dark}
+
+html,body{height:100%}
+body{
+  background:var(--page); color:var(--page-ink); font-family:var(--font); font-size:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-font-smoothing:antialiased;
+}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid #FF8A6A;outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.page-note{padding-block:28px;display:flex;flex-direction:column;gap:4px;max-width:520px}
+.page-note strong{font-size:13px;font-weight:700}
+.page-note span{font-size:12.5px;color:var(--page-ink-2);line-height:1.7}
+
+/* ---------- launcher ----------
+   A dark pill with light running round its edge and small voice-wave bars: "the assistant is here
+   and listening". The moving edge catches the eye without the button itself jumping about. */
+.launch{
+  position:fixed;z-index:30;
+  right:calc(24px + env(safe-area-inset-right,0px)); bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  padding:2px;border:0;border-radius:999px;overflow:hidden;isolation:isolate;
+  background:rgba(255,255,255,.14);
+  box-shadow:0 14px 34px -12px rgba(155,77,240,.55),0 10px 30px -14px rgba(255,106,61,.6);
+  transition:transform .25s var(--ease),opacity .2s,visibility 0s;
+}
+.launch::before{content:"";position:absolute;z-index:-1;left:50%;top:50%;width:300px;height:300px;margin:-150px 0 0 -150px;
+  background:conic-gradient(from 0deg,transparent 0 50%,var(--a1) 64%,var(--a2) 76%,var(--a3) 88%,transparent 100%);
+  animation:edge 3.6s linear infinite}
+@keyframes edge{to{transform:rotate(1turn)}}
+.launch-in{display:flex;align-items:center;gap:12px;height:54px;padding:0 22px 0 18px;border-radius:999px;background:var(--bg-2);color:var(--ink);font-size:15px;font-weight:700;letter-spacing:.02em}
+.launch:hover{transform:translateY(-2px)}
+.launch:active{transform:scale(.97)}
+.chat-open .launch{opacity:0;transform:scale(.85);visibility:hidden;pointer-events:none;transition:transform .2s,opacity .15s,visibility 0s linear .2s}
+.wave{display:flex;align-items:center;gap:3px;height:20px}
+.wave i{width:3px;height:100%;border-radius:2px;background:var(--grad);transform-origin:center;animation:wave 1.2s ease-in-out infinite}
+.wave i:nth-child(1){animation-delay:-.9s}.wave i:nth-child(2){animation-delay:-.3s}.wave i:nth-child(3){animation-delay:-.6s}.wave i:nth-child(4){animation-delay:0s}
+@keyframes wave{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+.badge{position:absolute;z-index:1;top:-6px;right:-4px;min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:999px;background:#D63A22;color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center;border:2px solid var(--page);font-variant-numeric:tabular-nums}
+/* the launcher clips its moving edge, so the cart badge sits in a zero-width frame of the same height */
+.launch-wrap{position:fixed;z-index:30;right:calc(24px + env(safe-area-inset-right,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));width:0;height:58px;pointer-events:none}
+
+/* ---------- panel ---------- */
+.panel{
+  position:fixed;z-index:31;
+  top:calc(16px + env(safe-area-inset-top,0px)); bottom:calc(16px + env(safe-area-inset-bottom,0px)); right:calc(16px + env(safe-area-inset-right,0px));
+  width:min(420px,calc(100vw - 32px));
+  background:var(--bg);color:var(--ink);border-radius:28px;box-shadow:var(--shadow);overflow:hidden;isolation:isolate;
+  display:flex;flex-direction:column;
+  opacity:0;transform:translateX(24px);visibility:hidden;
+  transition:opacity .22s ease,transform .38s var(--ease),visibility 0s linear .38s;
+}
+.panel.is-open{opacity:1;transform:none;visibility:visible;transition-delay:0s}
+
+/* aurora: three soft lights drifting slowly behind everything */
+.aurora{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.aurora i{position:absolute;width:320px;height:300px;border-radius:50%;filter:blur(70px);opacity:.42;transition:opacity .6s ease}
+.aurora i:nth-child(1){background:var(--a1);left:-120px;top:-120px;animation:drift1 18s ease-in-out infinite alternate}
+.aurora i:nth-child(2){background:var(--a2);right:-140px;top:-40px;animation:drift2 22s ease-in-out infinite alternate}
+.aurora i:nth-child(3){background:var(--a3);left:20%;bottom:-200px;opacity:.30;animation:drift3 26s ease-in-out infinite alternate}
+@keyframes drift1{to{transform:translate(90px,60px) scale(1.15)}}
+@keyframes drift2{to{transform:translate(-80px,90px) scale(.9)}}
+@keyframes drift3{to{transform:translate(60px,-70px) scale(1.2)}}
+.panel.is-thinking .aurora i{opacity:.62}
+.panel.is-thinking .aurora i:nth-child(3){opacity:.45}
+
+/* top row: wordmark + round glass controls */
+.top{position:absolute;z-index:4;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:14px 14px 0 20px;pointer-events:none}
+.top > *{pointer-events:auto}
+.mark{flex:1;font-size:17px;font-weight:800;letter-spacing:.01em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cb{height:40px;min-width:40px;border-radius:999px;border:1px solid var(--hair);padding:0;background:var(--glass-2);color:var(--ink);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);display:grid;place-items:center;transition:background .15s,transform .2s var(--ease)}
+.cb:hover{background:var(--glass-3)}
+.cb:active{transform:scale(.95)}
+.cb.cb-text{display:flex;align-items:center;gap:2px;padding:0 16px;font-size:14px;font-weight:700}
+.cb-text .plus{font-size:17px;font-weight:600;line-height:1;margin-right:2px}
+@media (pointer:coarse){.cb{height:44px;min-width:44px}}
+
+.scroll{
+  flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+  padding:96px 20px 24px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent;
+  /* fully clear under the top buttons, then fade in, so scrolled text never shows behind them */
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,transparent 52px,#000 96px,#000 calc(100% - 28px),transparent 100%);
+  mask-image:linear-gradient(to bottom,transparent 0,transparent 52px,#000 96px,#000 calc(100% - 28px),transparent 100%);
+}
+
+/* welcome: a big, left-aligned greeting by time of day, then one list of suggestions */
+.welcome{min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-end;gap:28px;padding-block:8px}
+.hello{display:flex;flex-direction:column;gap:6px}
+.hello small{font-size:13px;font-weight:600;color:var(--ink-3);letter-spacing:.04em}
+.hello h2{margin:0;font-size:28px;line-height:1.4;font-weight:800;letter-spacing:.01em;word-break:keep-all;overflow-wrap:anywhere}
+.hello h2 span{display:block}
+.hello h2 .g2{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.menu-label{font-size:12px;font-weight:700;color:var(--ink-3);letter-spacing:.08em;margin:0 0 -18px 4px}
+.starters{list-style:none;margin:0;padding:6px;border-radius:22px;background:var(--glass);border:1px solid var(--hair);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.starter{width:100%;display:flex;align-items:center;gap:14px;text-align:left;padding:14px;border:0;border-radius:16px;background:none;color:var(--ink);transition:background .15s}
+.starter:hover{background:var(--glass-2)}
+.starter .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.starter b{font-size:15px;font-weight:700;line-height:1.4}
+.starter small{font-size:12.5px;line-height:1.55;color:var(--ink-3)}
+.starter .go{flex:none;font-size:18px;color:var(--ink-3);transition:transform .2s var(--ease),color .15s}
+.starter:hover .go{color:var(--ink);transform:translateX(3px)}
+.starters li + li{border-top:1px solid var(--hair)}
+
+/* thread */
+.thread{display:flex;flex-direction:column;gap:22px}
+.thread:empty{display:none}
+.in{animation:rise .3s var(--ease) backwards}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+.u{align-self:flex-end;max-width:84%;background:var(--glass-2);border:1px solid var(--hair);color:var(--ink);padding:10px 15px;border-radius:20px 20px 6px 20px;font-size:14.5px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.a{display:flex;flex-direction:column;gap:14px;font-size:15px;line-height:1.8;color:var(--ink);min-width:0}
+.a p{margin:0}
+.a ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;color:var(--ink-2)}
+.small{font-size:12px !important;line-height:1.6 !important;color:var(--ink-3)}
+/* thinking: a light sweeping along a line, with the current step underneath */
+.thinking{display:flex;flex-direction:column;gap:8px;padding-top:4px}
+.sweep{position:relative;width:160px;height:3px;border-radius:2px;background:var(--glass-3);overflow:hidden}
+.sweep::after{content:"";position:absolute;inset:0;width:45%;border-radius:inherit;background:var(--grad);animation:sweep 1.1s var(--ease) infinite}
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(230%)}}
+.shimmer{font-size:13px;font-weight:600;background:linear-gradient(90deg,var(--ink-3) 0 35%,var(--ink) 50%,var(--ink-3) 65% 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shim 1.6s linear infinite}
+@keyframes shim{from{background-position:100% 0}to{background-position:-150% 0}}
+
+/* glass card + controls */
+.ask{margin:0;padding:18px;border-radius:22px;background:var(--glass);border:1px solid var(--hair);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.ask fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:18px;min-width:0}
+.ask fieldset:disabled{opacity:.5}
+.q{display:flex;flex-direction:column;gap:9px}
+.q-row{flex-direction:row;align-items:center;justify-content:space-between}
+.q-label{font-size:13px;font-weight:700;color:var(--ink-2)}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--hair-2);border-radius:999px;background:var(--glass);height:42px}
+.stepper button{width:42px;height:40px;border:0;background:none;border-radius:999px;font-size:18px;font-weight:600;line-height:1;color:var(--ink)}
+.stepper button:hover{background:var(--glass-2)}
+.stepper button:disabled{color:rgba(255,255,255,.25);cursor:default;background:none}
+.stepper output{min-width:4ch;text-align:center;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{position:relative}
+.opt input{position:absolute;opacity:0;width:1px;height:1px}
+.opt span{display:inline-flex;align-items:center;height:38px;padding:0 15px;border-radius:999px;border:1px solid var(--hair-2);background:var(--glass);font-size:13.5px;font-weight:600;color:var(--ink-2);cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.opt span:hover{border-color:rgba(255,255,255,.4);color:var(--ink)}
+.opt input:checked + span{background:var(--cta);border-color:transparent;color:#fff}
+.opt input:focus-visible + span{outline:2px solid #FF8A6A;outline-offset:2px}
+.btn-primary{height:50px;border:0;border-radius:999px;background:var(--cta);color:var(--on-cta);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;width:100%;box-shadow:0 10px 26px -12px rgba(196,45,90,.8);transition:transform .15s,filter .15s,opacity .15s}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-primary:active{transform:scale(.98)}
+.btn-primary:disabled{opacity:.4;cursor:default;filter:none;transform:none;box-shadow:none}
+.btn-ghost{height:50px;border:1px solid var(--hair-2);border-radius:999px;background:var(--glass);color:var(--ink);font-size:14px;font-weight:700;padding:0 18px;flex:none}
+.btn-ghost:hover{background:var(--glass-2)}
+
+/* ---------- side-by-side results ---------- */
+.carousel{position:relative;margin-right:-20px}
+.track{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 20px 4px 0;scrollbar-width:none}
+.track::-webkit-scrollbar{display:none}
+.track.dragging{scroll-snap-type:none;cursor:grabbing;user-select:none}
+@media (pointer:fine){.track{cursor:grab}}
+.car-btn{position:absolute;z-index:2;top:var(--btn-top,70px);width:38px;height:38px;border-radius:50%;border:1px solid var(--hair-2);padding:0;
+  background:rgba(24,18,27,.82);color:var(--ink);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);display:grid;place-items:center;transition:background .15s,transform .2s var(--ease)}
+.car-btn:hover{background:var(--bg-2);transform:scale(1.06)}
+.car-btn.prev{left:-8px}.car-btn.next{right:12px}
+.car-btn[hidden]{display:none}
+@media (pointer:coarse){.car-btn{display:none}}
+.pager{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;padding-right:20px}
+.pager i{width:6px;height:6px;border-radius:999px;background:var(--glass-3);transition:width .25s var(--ease),background .25s}
+.pager i.on{width:20px;background:var(--grad)}
+.hint{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--ink-3);margin:-4px 0 -4px}
+.hint b{color:var(--ink-2);font-weight:700;font-variant-numeric:tabular-nums}
+
+/* set card: a glass card with a photo grid on top, so the three plans can be compared by swiping */
+.set{flex:0 0 82%;scroll-snap-align:start;box-sizing:border-box;display:flex;flex-direction:column;text-align:left;padding:12px 12px 14px;border-radius:24px;
+  background:var(--glass);border:1px solid var(--hair);color:var(--ink);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);transition:background .15s,border-color .15s}
+.set:hover{background:var(--glass-2)}
+.set.best{border-color:transparent;background:linear-gradient(var(--bg-2),var(--bg-2)) padding-box,var(--grad) border-box;border:1.5px solid transparent}
+.photos{position:relative;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,58px);gap:6px}
+.photos .ph{border-radius:12px;background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.04));box-shadow:inset 0 0 0 1px var(--hair)}
+.photos .ph:first-child{grid-row:span 2}
+.photos .more{display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--ink-2)}
+.best-tag{position:absolute;left:8px;top:8px;font-size:12px;font-weight:800;color:#fff;background:var(--cta);padding:3px 10px;border-radius:999px;box-shadow:0 6px 16px -6px rgba(196,45,90,.9)}
+.set-title{margin-top:14px;padding:0 4px;font-size:16px;font-weight:700;line-height:1.45}
+.set-sub{margin-top:3px;padding:0 4px;font-size:12.5px;line-height:1.5;color:var(--ink-3)}
+.set-foot{margin-top:14px;padding:12px 4px 0;border-top:1px solid var(--hair);display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.price{font-size:22px;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums;line-height:1.15}
+.price small{display:block;font-size:12px;font-weight:500;color:var(--ink-3);letter-spacing:0;margin-top:2px}
+.fit{font-size:12.5px;font-weight:700}
+.fit.ok{color:var(--ok)}.fit.over{color:var(--over)}
+.open-set{margin-top:12px;height:40px;border-radius:999px;background:var(--glass-2);display:grid;place-items:center;font-size:13.5px;font-weight:700;color:var(--ink);transition:background .15s}
+.set:hover .open-set{background:var(--glass-3)}
+
+/* product cards in the same swipe row */
+.prod{flex:0 0 150px;scroll-snap-align:start;display:flex;flex-direction:column;gap:6px;padding:8px 8px 10px;border-radius:20px;background:var(--glass);border:1px solid var(--hair)}
+.prod .pic{height:96px;border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.04));box-shadow:inset 0 0 0 1px var(--hair);position:relative}
+.off{position:absolute;top:6px;left:6px;font-size:12px;font-weight:800;background:var(--cta);color:#fff;border-radius:999px;padding:0 7px}
+.prod b{font-size:12.5px;font-weight:600;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:3em;padding:0 2px}
+.prod-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 2px}
+.prod-foot .p{display:flex;flex-direction:column;line-height:1.25}
+.prod-foot .p strong{font-size:15px;font-weight:800;color:#FF9C8C;font-variant-numeric:tabular-nums}
+.prod-foot .p strong.plain{color:var(--ink)}
+.prod-foot .p s{font-size:12px;color:var(--ink-3)}
+.add{width:36px;height:36px;border-radius:50%;border:1px solid var(--hair-2);background:var(--glass);color:var(--ink);font-size:18px;font-weight:600;line-height:1;display:grid;place-items:center;transition:background .15s,color .15s}
+.add:hover{background:var(--ink);color:var(--bg)}
+.add.done{background:rgba(116,221,166,.16);color:var(--ok);border-color:transparent;font-size:15px}
+
+.added{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border-radius:20px;background:rgba(116,221,166,.12);border:1px solid rgba(116,221,166,.3)}
+.added strong{font-size:14px;color:var(--ok)}
+.added span{font-size:12.5px;color:var(--ink-2)}
+
+/* composer */
+.foot{flex:none;padding:4px 16px 14px;position:relative}
+.follow{display:flex;gap:6px;overflow-x:auto;padding:10px 16px 14px;margin:-10px -16px -4px;scrollbar-width:none}
+.follow::-webkit-scrollbar{display:none}
+.follow:empty{display:none}
+.chip{flex:none;height:36px;padding:0 15px;border-radius:999px;border:1px solid var(--hair-2);background:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap;transition:background .15s,color .15s}
+.chip:hover{background:var(--glass-2);color:var(--ink)}
+/* the composer's edge lights up in the gradient while you type */
+.composer{position:relative;display:flex;align-items:flex-end;gap:8px;border-radius:26px;padding:6px 6px 6px 18px;background:var(--bg-2);border:1px solid var(--hair-2);transition:border-color .2s,box-shadow .2s}
+.composer:focus-within{border-color:transparent;background:linear-gradient(var(--bg-2),var(--bg-2)) padding-box,var(--grad) border-box;box-shadow:0 0 28px -8px rgba(232,64,126,.55)}
+.composer textarea{flex:1;min-width:0;border:0;outline:0;resize:none;background:transparent;color:var(--ink);font-size:15px;line-height:1.5;padding:8px 0;max-height:120px;height:39px;box-sizing:border-box}
+.composer textarea::placeholder{color:var(--ink-3)}
+.send{flex:none;position:relative;overflow:hidden;width:40px;height:40px;border:0;border-radius:50%;background:var(--glass-2);color:var(--ink-3);display:grid;place-items:center;transition:color .2s,transform .2s var(--ease)}
+.send::before{content:"";position:absolute;inset:0;background:var(--cta);opacity:0;transition:opacity .2s}
+.send svg{position:relative}
+.send.ready{color:#fff}
+.send.ready::before{opacity:1}
+.send.ready:hover{transform:scale(1.05)}
+.send:disabled{cursor:default}
+.fine{margin:9px 0 0;text-align:center;font-size:12px;line-height:1.5;color:var(--ink-3)}
+
+/* set detail: slides in from the right, like going one level deeper */
+.sheet{position:absolute;inset:0;z-index:6;background:var(--bg);display:flex;flex-direction:column;visibility:hidden;transform:translateX(100%);transition:transform .36s var(--ease),visibility 0s linear .36s;isolation:isolate}
+.sheet.is-open{transform:none;visibility:visible;transition-delay:0s}
+.sheet .top{padding-left:14px}
+.sh-title{flex:none;display:flex;flex-direction:column;gap:5px;padding:72px 20px 14px}
+.sh-title small{font-size:12px;font-weight:700;color:#FF9C8C;letter-spacing:.04em}
+.sh-title h3{margin:0;font-size:21px;line-height:1.45;font-weight:800;text-wrap:balance}
+.sh-title p{margin:2px 0 0;font-size:13px;line-height:1.7;color:var(--ink-2)}
+.sh-title .cool{align-self:flex-start;margin-top:4px;font-size:12px;font-weight:600;color:var(--cool);background:rgba(156,200,245,.12);border-radius:6px;padding:1px 7px}
+.lines{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin:0 12px;padding:0 14px;list-style:none;border-radius:22px;background:var(--glass);border:1px solid var(--hair);scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent}
+.line{display:grid;grid-template-columns:22px 52px minmax(0,1fr);gap:12px;align-items:start;padding:14px 0;border-bottom:1px solid var(--hair);transition:opacity .2s}
+.line:last-child{border-bottom:0}
+.line.off-line{opacity:.4}
+.line input[type=checkbox]{width:20px;height:20px;margin:16px 0 0;accent-color:#E8407E;cursor:pointer}
+.tile{flex:none;width:52px;height:52px;border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.12),rgba(255,255,255,.04));box-shadow:inset 0 0 0 1px var(--hair)}
+.li{min-width:0;display:flex;flex-direction:column;gap:6px}
+.li-name{font-size:14px;font-weight:600;line-height:1.5}
+.li-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--ink-3)}
+.frozen{font-size:12px;font-weight:700;color:var(--cool);background:rgba(156,200,245,.12);padding:0 6px;border-radius:5px}
+.li-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.li-row .stepper{height:34px}
+.li-row .stepper button{width:34px;height:32px;font-size:16px}
+.li-row .stepper output{min-width:3ch;font-size:14px}
+.li-total{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+.sh-foot{flex:none;padding:14px 20px 16px;display:flex;flex-direction:column;gap:12px}
+.ship{display:flex;flex-direction:column;gap:7px;font-size:12.5px;color:var(--ink-2)}
+.ship b{color:var(--ink)}
+.bar{height:6px;border-radius:999px;background:var(--glass-3);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:inherit;background:var(--grad);box-shadow:0 0 12px rgba(232,64,126,.7);transition:width .4s var(--ease)}
+.ship.done{color:var(--ok);font-weight:600}
+.total-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.total-row span{font-size:13px;color:var(--ink-3)}
+.total-row strong{font-size:26px;font-weight:800;letter-spacing:-.015em;font-variant-numeric:tabular-nums}
+.total-row strong small{font-size:12px;font-weight:500;color:var(--ink-3);margin-left:4px;letter-spacing:0}
+.actions{display:flex;gap:8px}
+
+.toast{position:absolute;z-index:8;left:50%;top:72px;transform:translate(-50%,-10px);opacity:0;pointer-events:none;padding:11px 18px;border-radius:999px;background:rgba(247,241,243,.95);color:var(--bg);font-size:13.5px;font-weight:700;white-space:nowrap;box-shadow:0 12px 30px -10px rgba(0,0,0,.6);transition:opacity .2s,transform .3s var(--ease)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* phones: full screen */
+@media (max-width:560px){
+  .panel{top:0;bottom:0;right:0;left:0;width:auto;border-radius:0;transform:translateY(32px);
+    padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .top{top:env(safe-area-inset-top,0px);padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .foot{padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .scroll{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .carousel{margin-right:calc(-1 * max(16px,env(safe-area-inset-right,0px)))}
+  .follow{margin-left:calc(-1 * max(12px,env(safe-area-inset-left,0px)));margin-right:calc(-1 * max(12px,env(safe-area-inset-right,0px)));padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .hello h2{font-size:26px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+  .wave i{animation:none !important;transform:scaleY(.7)}
+  .aurora i{animation:none !important}
+}
+</style>
+</head>
+<body>
+
+<main class="page-note">
+  <strong>ココAI チャット プロトタイプ · 案B</strong>
+  <span>アシスタントを試すための空のページです。右下のボタンから開いてください。商品・価格はすべてサンプルです。</span>
+</main>
+
+<button type="button" class="launch" id="launch" aria-controls="panel" aria-expanded="false">
+  <span class="launch-in"><span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span>ココAIに相談</span>
+</button>
+<div class="launch-wrap" aria-hidden="true"><span class="badge" id="badge" hidden>0</span></div>
+
+<section class="panel" id="panel" role="dialog" aria-label="ココAI お買い物アシスタント" inert>
+  <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="top">
+    <span class="mark" aria-hidden="true">ココAI</span>
+    <button type="button" class="cb cb-text" id="newBtn"><span class="plus" aria-hidden="true">＋</span>新しい相談</button>
+    <button type="button" class="cb" id="closeBtn" aria-label="閉じる"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+
+  <div class="scroll" id="scroll">
+    <div class="welcome" id="welcome">
+      <div class="hello">
+        <small>お買い物アシスタント</small>
+        <h2><span id="greet">こんにちは。</span><span class="g2">今日は何を作りますか？</span></h2>
+      </div>
+      <p class="menu-label">よくある相談</p>
+      <ul class="starters" id="starters"></ul>
+    </div>
+    <div class="thread" id="thread" aria-live="polite"></div>
+  </div>
+
+  <div class="foot">
+    <div class="follow" id="follow"></div>
+    <form class="composer" id="composer">
+      <label class="sr" for="msg">ココAIへのメッセージ</label>
+      <textarea id="msg" rows="1" placeholder="例：週末に4人で火鍋をしたい" autocomplete="off"></textarea>
+      <button type="submit" class="send" id="sendBtn" aria-label="送信" disabled><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+    </form>
+    <p class="fine">AIの回答は正確でない場合があります。価格・在庫・アレルギー情報は商品ページでご確認ください。</p>
+  </div>
+
+  <div class="sheet" id="sheet" role="region" aria-label="セット内容" inert>
+    <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="top">
+      <button type="button" class="cb" id="sheetBack" aria-label="チャットに戻る"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+    </div>
+    <div class="sh-title" id="sheetTitle"></div>
+    <ul class="lines" id="lines"></ul>
+    <div class="sh-foot">
+      <div class="ship" id="ship"></div>
+      <div class="total-row"><span id="sumCount"></span><strong id="sumTotal"></strong></div>
+      <div class="actions">
+        <button type="button" class="btn-ghost" id="sheetBack2">チャットに戻る</button>
+        <button type="button" class="btn-primary" id="addAll"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+</section>
+
+<script>
+(() => {
+  document.documentElement.lang = 'ja';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = (s) => document.getElementById(s);
+  const yen = (n) => '¥' + Math.round(n).toLocaleString('ja-JP');
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const wait = (ms) => new Promise((r) => setTimeout(r, reduce ? 120 : ms));
+  const FREE_SHIP = 4980;
+
+  const CAT = {
+    soup: { label: 'スープの素' }, fish: { label: '魚団子' }, tofu: { label: '豆腐・湯葉' },
+    noodle: { label: '麺・春雨' }, sauce: { label: 'つけだれ' }, drink: { label: '飲料' },
+    veg: { label: '野菜・きのこ' }, meat: { label: '肉' }, snack: { label: 'お菓子' },
+  };
+  const tile = () => '<span class="tile" aria-hidden="true"></span>';
+
+  /* greeting by the time of day in Japan */
+  const hour = +new Intl.DateTimeFormat('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Tokyo' }).format(new Date());
+  $('greet').textContent = hour >= 5 && hour < 10 ? 'おはようございます。' : hour >= 10 && hour < 18 ? 'こんにちは。' : 'こんばんは。';
+
+  /* ---------- sample data (same as 案A, so only the design differs) ---------- */
+  const SPICY = { n: '海底捞 牛油麻辣火鍋の素', c: 'soup', p: 594 };
+  const BASE = [
+    { id: 1, tag: '定番・手軽', title: 'きのこスープの火鍋スターター',
+      desc: 'やさしいきのこスープに湯葉と春雨、胡麻だれを合わせた基本のセット。ご予算に余裕が残ります。',
+      items: [
+        { n: '小肥羊 菌湯火鍋の素', c: 'soup', p: 648 },
+        { n: '海底捞 豆皮', c: 'tofu', p: 346 },
+        { n: '龍口 緑豆春雨 250g', c: 'noodle', p: 298 },
+        { n: 'えのき茸 200g', c: 'veg', p: 128 },
+        { n: '双葉 胡麻だれ（白）', c: 'sauce', p: 498 },
+        { n: '王老吉 涼茶 310ml', c: 'drink', p: 218, q: 2 },
+      ] },
+    { id: 2, tag: 'あっさり・具だくさん', title: '清湯スープと2種の魚団子セット',
+      desc: 'あっさりした清湯スープに、2種類の魚団子と湯葉。つけだれと飲み物も入っています。',
+      items: [
+        { n: '小肥羊 清湯火鍋の素', c: 'soup', p: 669 },
+        { n: 'NK 正宗福州魚丸', c: 'fish', p: 879, f: true },
+        { n: '郷音 八珍玉食（八種花様丸子）', c: 'fish', p: 1167, f: true },
+        { n: '海底捞 豆皮', c: 'tofu', p: 346 },
+        { n: '海底捞 極太さつまいも春雨', c: 'noodle', p: 320 },
+        { n: '双葉 胡麻だれ（白）', c: 'sauce', p: 498 },
+        { n: '王老吉 涼茶 310ml', c: 'drink', p: 218, q: 2 },
+      ] },
+    { id: 3, tag: '2種のスープ', title: 'トマト＆清湯の二色鍋セット',
+      desc: '辛くない2種のスープを食べ比べ。魚団子、冷凍豆腐、腐竹、春雨、胡麻だれまで揃います。',
+      items: [
+        { n: '小肥羊 清湯火鍋の素', c: 'soup', p: 669 },
+        { n: '海底捞 トマト火鍋の素', c: 'soup', p: 594 },
+        { n: 'NK 正宗福州魚丸', c: 'fish', p: 879, f: true },
+        { n: '冷凍豆腐 400g', c: 'tofu', p: 298, f: true },
+        { n: '腐竹（湯葉スティック）', c: 'tofu', p: 398 },
+        { n: '海底捞 極太さつまいも春雨', c: 'noodle', p: 320 },
+        { n: 'えのき茸 200g', c: 'veg', p: 128 },
+        { n: '双葉 胡麻だれ（白）', c: 'sauce', p: 498 },
+        { n: '王老吉 涼茶 310ml', c: 'drink', p: 218, q: 2 },
+      ] },
+  ];
+  const DEALS = [
+    { n: '海底捞 牛油麻辣火鍋の素 220g', c: 'soup', p: 594, was: 660 },
+    { n: '康師傅 紅焼牛肉麺 5食入', c: 'noodle', p: 680, was: 756 },
+    { n: '旺旺 雪餅 520g', c: 'snack', p: 598, was: 698 },
+    { n: '王老吉 涼茶 310ml × 6本', c: 'drink', p: 1180, was: 1308 },
+  ];
+  const RECENT = [
+    { n: 'NK 正宗福州魚丸', c: 'fish', p: 879 },
+    { n: '双葉 胡麻だれ（白）', c: 'sauce', p: 498 },
+    { n: '海底捞 豆皮', c: 'tofu', p: 346 },
+  ];
+  const SNACKS = [
+    { n: '旺旺 雪餅 520g', c: 'snack', p: 598, was: 698 },
+    { n: '徐福記 沙琪瑪 469g', c: 'snack', p: 548 },
+    { n: '衛龍 大面筋 102g', c: 'snack', p: 238 },
+  ];
+  const LISTS = { deals: DEALS, recent: RECENT, snacks: SNACKS };
+  const STARTERS = [
+    { title: '火鍋パーティーを計画する', sub: '人数とご予算に合わせてセットを提案', say: '火鍋パーティーをしたいので、セットを提案してください' },
+    { title: '本日のお得を見る', sub: 'いまセール中の商品をチェック', say: '今日のセール商品を見せて' },
+    { title: '買い物を再開する', sub: '最近チェックした商品をもう一度', say: '最近見た商品を見せて' },
+    { title: 'ココAIでできること', sub: '使い方とご利用の注意点', say: 'ココAIでできることを教えて' },
+  ];
+  const SPICE_LABEL = { none: '辛くない', mild: 'ピリ辛', spicy: '辛口', half: '半々（鴛鴦鍋）' };
+
+  /* ---------- state + elements ---------- */
+  const state = { open: false, busy: false, cart: 0, prefs: null, plans: [], detail: null, uid: 0 };
+  const panel = $('panel'), launch = $('launch'), scroll = $('scroll'), thread = $('thread'), welcome = $('welcome');
+  const input = $('msg'), sendBtn = $('sendBtn'), follow = $('follow'), sheet = $('sheet');
+
+  $('starters').innerHTML = STARTERS.map((s, i) => `
+    <li><button type="button" class="starter" data-starter="${i}"><span class="t"><b>${s.title}</b><small>${s.sub}</small></span><span class="go" aria-hidden="true">→</span></button></li>`).join('');
+
+  /* ---------- open / close ---------- */
+  function setOpen(v) {
+    state.open = v;
+    panel.classList.toggle('is-open', v);
+    panel.inert = !v;
+    document.body.classList.toggle('chat-open', v);
+    launch.setAttribute('aria-expanded', String(v));
+    launch.inert = v;
+    if (v) setTimeout(() => input.focus({ preventScroll: true }), 150);
+    else { closeSheet(); launch.focus({ preventScroll: true }); }
+    updateBadge();
+  }
+  launch.addEventListener('click', () => setOpen(!state.open));
+  $('closeBtn').addEventListener('click', () => setOpen(false));
+  panel.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (sheet.classList.contains('is-open')) closeSheet(); else setOpen(false);
+  });
+  function updateBadge() {
+    const b = $('badge');
+    b.textContent = state.cart;
+    b.hidden = state.cart === 0 || state.open;
+  }
+
+  /* ---------- composer ---------- */
+  function syncComposer() {
+    // empty: back to the one-line CSS height (a measurement taken before first layout can read 3 lines)
+    input.style.height = 'auto';
+    input.style.height = input.value ? Math.min(input.scrollHeight, 120) + 'px' : '';
+    const ready = input.value.trim().length > 0 && !state.busy;
+    sendBtn.disabled = !ready;
+    sendBtn.classList.toggle('ready', ready);
+  }
+  input.addEventListener('input', syncComposer);
+  input.addEventListener('keydown', (e) => {
+    // isComposing: the Enter that confirms a kana→kanji conversion must not send the message
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('composer').requestSubmit(); }
+  });
+  $('composer').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text || state.busy) return;
+    input.value = '';
+    syncComposer();
+    send(text);
+  });
+
+  /* ---------- thread primitives ---------- */
+  function startThread() { if (!welcome.hidden) welcome.hidden = true; }
+  function reveal(node) {
+    requestAnimationFrame(() => {
+      const behavior = reduce ? 'auto' : 'smooth';
+      if (node.offsetHeight > scroll.clientHeight * 0.7) scroll.scrollTo({ top: node.offsetTop - 96, behavior });
+      else scroll.scrollTo({ top: scroll.scrollHeight, behavior });
+    });
+  }
+  function addUser(text) {
+    startThread();
+    const d = document.createElement('div');
+    d.className = 'u in';
+    d.textContent = text;
+    thread.appendChild(d);
+    reveal(d);
+  }
+  function addAI(html) {
+    startThread();
+    const d = document.createElement('div');
+    d.className = 'a in';
+    d.innerHTML = html;
+    thread.appendChild(d);
+    reveal(d);
+    initCarousels(d);
+    return d;
+  }
+  async function think(steps) {
+    state.busy = true; syncComposer(); setFollow([]);
+    panel.classList.add('is-thinking');
+    const d = document.createElement('div');
+    d.className = 'a in';
+    d.innerHTML = '<div class="thinking"><span class="sweep" aria-hidden="true"></span><span class="shimmer"></span></div>';
+    thread.appendChild(d);
+    reveal(d);
+    for (const s of steps) { d.querySelector('.shimmer').textContent = s; await wait(750); }
+    d.remove();
+    panel.classList.remove('is-thinking');
+    state.busy = false; syncComposer();
+  }
+  function setFollow(list) {
+    follow.innerHTML = list.map((t) => `<button type="button" class="chip" data-say="${esc(t)}">${esc(t)}</button>`).join('');
+  }
+  let toastTimer;
+  function toast(text) {
+    const t = $('toast');
+    t.textContent = text;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  /* ---------- routing ---------- */
+  function send(text) { addUser(text); route(text); }
+  function route(t) {
+    if (state.prefs) {
+      if (/辛/.test(t)) { state.prefs.spice = 'spicy'; return replySets(state.prefs, 'スープを牛油麻辣（辛口）に入れ替えました。'); }
+      if (/肉/.test(t)) { state.prefs.meat = true; return replySets(state.prefs, 'すべてのセットに冷凍ラム肉スライスを追加しました。'); }
+      if (/安|抑え/.test(t)) { state.prefs.lean = true; return replySets(state.prefs, '飲み物と野菜を外して、価格を抑えました。'); }
+    }
+    if (/やり直|最初から/.test(t)) return newChat();
+    if (/カート/.test(t)) return replyCart();
+    if (/セール|お得|割引/.test(t)) return replyDeals();
+    if (/できること|使い方|注意/.test(t)) return replyHow();
+    if (/最近|見た商品|再開/.test(t)) return replyRecent();
+    if (/鍋|パーティ|人で|人分|友人|家族/.test(t)) return replyClarify();
+    return replySearch(t);
+  }
+
+  /* ---------- replies ---------- */
+  async function replyClarify() {
+    await think(['ご要望を確認しています…']);
+    const id = ++state.uid;
+    const opt = (name, value, label, checked) => `<label class="opt"><input type="radio" name="${name}-${id}" value="${value}"${checked ? ' checked' : ''}><span>${label}</span></label>`;
+    addAI(`
+      <p>いいですね！3つだけ教えてください。人数に合わせて量を調整したセットをご用意します。</p>
+      <form class="ask" data-ask="${id}">
+        <fieldset>
+          <div class="q q-row">
+            <span class="q-label" id="ppl-${id}">人数</span>
+            <span class="stepper" role="group" aria-labelledby="ppl-${id}">
+              <button type="button" data-step="-1" aria-label="人数を減らす">−</button>
+              <output aria-live="polite">4人</output>
+              <button type="button" data-step="1" aria-label="人数を増やす">＋</button>
+            </span>
+          </div>
+          <div class="q" role="radiogroup" aria-label="辛さ">
+            <span class="q-label">辛さ</span>
+            <div class="opts">${opt('spice', 'none', '辛くない', true)}${opt('spice', 'mild', 'ピリ辛')}${opt('spice', 'spicy', '辛口')}${opt('spice', 'half', '半々（鴛鴦鍋）')}</div>
+          </div>
+          <div class="q" role="radiogroup" aria-label="ご予算">
+            <span class="q-label">ご予算</span>
+            <div class="opts">${opt('budget', '3000', '¥3,000')}${opt('budget', '5000', '¥5,000', true)}${opt('budget', '8000', '¥8,000')}${opt('budget', '0', '指定なし')}</div>
+          </div>
+          <button type="submit" class="btn-primary">この条件でセットを作る</button>
+        </fieldset>
+      </form>`);
+  }
+
+  function buildPlans(prefs) {
+    const k = prefs.people / 4;
+    return BASE.map((b) => {
+      let items = b.items.map((it) => ({ ...it }));
+      let tag = b.tag;
+      if (prefs.spice === 'spicy') {
+        items[items.findIndex((x) => x.c === 'soup')] = { ...SPICY };
+      } else if (prefs.spice === 'half') {
+        if (b.id === 3) { items[1] = { ...SPICY }; tag = '半々（鴛鴦鍋）'; }
+        else items.splice(1, 0, { ...SPICY });
+      }
+      if (prefs.meat) items.splice(1, 0, { n: '冷凍 ラム肉スライス 500g', c: 'meat', p: 798, f: true, q: Math.ceil(prefs.people / 4) });
+      if (prefs.lean) items = items.filter((x) => x.c !== 'drink' && x.c !== 'veg');
+      items = items.map((x) => {
+        const base = x.q || 1;
+        const q = x.c === 'soup' ? (prefs.people > 6 ? 2 : 1) : x.c === 'meat' ? base : Math.max(1, Math.round(base * k));
+        return { ...x, q };
+      });
+      const total = items.reduce((s, x) => s + x.p * x.q, 0);
+      const count = items.reduce((s, x) => s + x.q, 0);
+      return { ...b, tag, items, total, count, cool: items.some((x) => x.f) };
+    });
+  }
+  function pickBest(plans, budget) {
+    if (!budget) return plans[1].id;
+    const fit = plans.filter((p) => p.total <= budget).sort((a, b) => b.total - a.total);
+    return (fit[0] || [...plans].sort((a, b) => a.total - b.total)[0]).id;
+  }
+  function setCard(p, prefs, bestId) {
+    // photo grid: one large + four small; the last small square counts what's left
+    const n = p.items.length;
+    const ph = Array.from({ length: Math.min(n, 5) }, (_, i) =>
+      i === 4 && n > 5 ? `<span class="ph more">+${n - 4}</span>` : '<span class="ph"></span>').join('');
+    let fit = '', fitText = '';
+    if (prefs.budget) {
+      const ok = p.total <= prefs.budget;
+      fitText = ok ? 'ご予算内' : `${yen(p.total - prefs.budget)}オーバー`;
+      fit = `<span class="fit ${ok ? 'ok' : 'over'}">${fitText}</span>`;
+    }
+    const best = p.id === bestId;
+    const sub = [p.tag, `${p.count}点`, p.cool ? 'クール便' : ''].filter(Boolean).join(' · ');
+    const label = [best ? 'いちばんおすすめ' : '', p.title, sub, `${yen(p.total)} 税込`, fitText, 'セット内容を見る'].filter(Boolean).join('、');
+    return `
+      <button type="button" class="set${best ? ' best' : ''}" data-plan="${p.id}" aria-label="${esc(label)}">
+        <span class="photos" aria-hidden="true">${ph}${best ? '<span class="best-tag">いちばんおすすめ</span>' : ''}</span>
+        <span class="set-title">${esc(p.title)}</span>
+        <span class="set-sub">${esc(sub)}</span>
+        <span class="set-foot">
+          <span class="price">${yen(p.total)}<small>税込</small></span>
+          ${fit}
+        </span>
+        <span class="open-set" aria-hidden="true">セット内容を見る</span>
+      </button>`;
+  }
+  const CHEV_L = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>';
+  const CHEV_R = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
+  function carousel(cards, { pager = false, btnTop = 38, what = '商品' } = {}) {
+    return `<div class="carousel" style="--btn-top:${btnTop}px">
+      <button type="button" class="car-btn prev" data-car="-1" aria-label="前の${what}" hidden>${CHEV_L}</button>
+      <div class="track">${cards.join('')}</div>
+      <button type="button" class="car-btn next" data-car="1" aria-label="次の${what}" hidden>${CHEV_R}</button>
+      ${pager ? `<div class="pager" aria-hidden="true">${cards.map((_, i) => `<i${i ? '' : ' class="on"'}></i>`).join('')}</div>` : ''}
+    </div>`;
+  }
+  async function replySets(prefs, lead) {
+    state.prefs = { ...prefs };
+    await think(['ご要望を確認しています…', '商品を探しています…', 'セットを組み立てています…']);
+    const plans = buildPlans(state.prefs);
+    state.plans = plans;
+    const bestId = pickBest(plans, prefs.budget);
+    // lead with the recommended set, so the first card you see is the best fit
+    const ordered = [...plans].sort((a, b) => (b.id === bestId) - (a.id === bestId));
+    const allIn = prefs.budget && plans.every((p) => p.total <= prefs.budget);
+    const intro = lead || `${prefs.people}人分のセットを3つご用意しました${allIn ? `。どれもご予算${yen(prefs.budget)}以内です` : ''}。横にスワイプして比べてみてください。`;
+    addAI(`<p>${esc(intro)}</p>
+      <div class="hint"><span>セットを比較</span><b class="count">1 / ${plans.length}</b></div>
+      ${carousel(ordered.map((p) => setCard(p, state.prefs, bestId)), { pager: true, btnTop: 64, what: 'セット' })}
+      <p class="small">価格・在庫は変わる場合があります。セットを開くと数量を変更できます。</p>`);
+    setFollow(['もっと辛くしたい', 'お肉を追加して', 'もう少し安く', '最初からやり直す']);
+  }
+  function prodCard(x, i, list) {
+    const off = x.was ? Math.round((1 - x.p / x.was) * 100) : 0;
+    return `
+      <div class="prod">
+        <span class="pic">${off ? `<span class="off">${off}%OFF</span>` : ''}</span>
+        <b>${esc(x.n)}</b>
+        <span class="prod-foot">
+          <span class="p"><strong class="${x.was ? '' : 'plain'}">${yen(x.p)}</strong>${x.was ? `<s>${yen(x.was)}</s>` : ''}</span>
+          <button type="button" class="add" data-add="${list}:${i}" aria-label="${esc(x.n)}をカートに追加">＋</button>
+        </span>
+      </div>`;
+  }
+  const prodRow = (list, key) => carousel(list.map((x, i) => prodCard(x, i, key)));
+
+  /* Swipe rows. Desktop: a vertical wheel can't scroll sideways, so rows get arrow buttons (shown
+     only when there is more to see) and mouse drag. Touch swipes natively. The set row also has
+     a 1 / 3 counter and page dots that follow the scroll. */
+  function initCarousels(root) {
+    root.querySelectorAll('.carousel').forEach((car) => {
+      const row = car.querySelector('.track');
+      const prev = car.querySelector('.prev'), next = car.querySelector('.next');
+      const dots = [...car.querySelectorAll('.pager i')];
+      const count = car.parentElement.querySelector('.count');
+      const sync = () => {
+        const max = row.scrollWidth - row.clientWidth - 2;
+        prev.hidden = row.scrollLeft <= 2;
+        next.hidden = row.scrollLeft >= max;
+        if (dots.length) {
+          const first = row.children[0];
+          const stepPx = first ? first.offsetWidth + 12 : 1;
+          const idx = row.scrollLeft >= max ? dots.length - 1 : Math.round(row.scrollLeft / stepPx);
+          dots.forEach((d, i) => d.classList.toggle('on', i === idx));
+          if (count) count.textContent = `${idx + 1} / ${dots.length}`;
+        }
+      };
+      row.addEventListener('scroll', sync, { passive: true });
+      requestAnimationFrame(sync);
+      car.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-car]');
+        if (!b) return;
+        const first = row.children[0];
+        const stepPx = first ? first.offsetWidth + 12 : 160;
+        row.scrollBy({ left: +b.dataset.car * stepPx * (dots.length ? 1 : 2), behavior: reduce ? 'auto' : 'smooth' });
+      });
+      let drag = null;
+      row.addEventListener('pointerdown', (e) => {
+        if (e.pointerType !== 'mouse' || e.button !== 0 || e.target.closest('.add, .car-btn')) return;
+        drag = { x: e.clientX, left: row.scrollLeft, moved: false };
+      });
+      row.addEventListener('pointermove', (e) => {
+        if (!drag) return;
+        const dx = e.clientX - drag.x;
+        if (!drag.moved && Math.abs(dx) > 4) { drag.moved = true; row.classList.add('dragging'); row.setPointerCapture(e.pointerId); }
+        if (drag.moved) row.scrollLeft = drag.left - dx;
+      });
+      const end = () => {
+        if (!drag) return;
+        if (drag.moved) {
+          const left = row.scrollLeft;
+          row.classList.remove('dragging');
+          row.scrollLeft = left;
+          // a drag that started on a set card must not also open it (the click lands in this same task)
+          row._dragged = true;
+          setTimeout(() => { row._dragged = false; }, 0);
+        }
+        drag = null;
+      };
+      row.addEventListener('pointerup', end);
+      row.addEventListener('pointercancel', end);
+    });
+  }
+  async function replyDeals() {
+    await think(['本日の価格を確認しています…']);
+    addAI(`<p>本日のセール商品です。「＋」でそのままカートに追加できます。</p>${prodRow(DEALS, 'deals')}`);
+    setFollow(['これで火鍋セットを組みたい', 'お菓子も見たい']);
+  }
+  async function replyRecent() {
+    await think(['最近チェックした商品を確認しています…']);
+    addAI(`<p>最近チェックした商品です。3点とも在庫があります。</p>${prodRow(RECENT, 'recent')}`);
+    setFollow(['これを使って火鍋セットを組みたい', '今日のセールは？']);
+  }
+  async function replySearch(text) {
+    await think(['商品を探しています…']);
+    addAI(`<p>「${esc(text)}」に合いそうな商品です。誰と食べるか教えていただければ、セットにまとめます。</p>${prodRow(SNACKS, 'snacks')}`);
+    setFollow(['火鍋パーティーを計画したい', '今日のセールは？']);
+  }
+  async function replyHow() {
+    await think(['ご要望を確認しています…']);
+    addAI(`<p>ココAIは、KokoMartの在庫商品からお買い物セットを組み立てるアシスタントです。作りたい料理やシーン、人数、ご予算を教えていただくと、まとめてカートに入れられるセットを提案します。</p>
+      <ul><li>提案するのは、いま在庫がある商品だけです。</li><li>価格はすべて税込です。アレルギー情報は各商品ページでご確認ください。</li><li>ご注文やお支払い情報の確認はできません。お会計はいつも通りお客様ご自身で行います。</li></ul>`);
+    setFollow(['火鍋パーティーを計画したい', '今日のセールは？']);
+  }
+  async function replyCart() {
+    await think(['カートを確認しています…']);
+    addAI(state.cart
+      ? `<p>カートには${state.cart}点入っています。実際のストアでは、ここからカートページが開きます。</p>`
+      : '<p>カートはまだ空です。セットを組みましょうか？</p>');
+    setFollow(['火鍋パーティーを計画したい', '今日のセールは？']);
+  }
+
+  function newChat() {
+    thread.innerHTML = '';
+    welcome.hidden = false;
+    state.prefs = null; state.plans = []; state.busy = false;
+    panel.classList.remove('is-thinking');
+    setFollow([]);
+    closeSheet();
+    scroll.scrollTop = 0;
+    syncComposer();
+    input.focus({ preventScroll: true });
+  }
+  $('newBtn').addEventListener('click', newChat);
+
+  /* ---------- clicks inside the chat ---------- */
+  panel.addEventListener('click', (e) => {
+    const s = e.target.closest('[data-starter]');
+    if (s && !state.busy) return send(STARTERS[+s.dataset.starter].say);
+    const chip = e.target.closest('[data-say]');
+    if (chip && !state.busy) return send(chip.dataset.say);
+    const step = e.target.closest('.ask [data-step]');
+    if (step) {
+      const box = step.parentElement, out = box.querySelector('output');
+      const v = Math.min(12, Math.max(1, parseInt(out.textContent, 10) + +step.dataset.step));
+      out.textContent = v + '人';
+      box.querySelector('[data-step="-1"]').disabled = v <= 1;
+      box.querySelector('[data-step="1"]').disabled = v >= 12;
+      return;
+    }
+    const plan = e.target.closest('[data-plan]');
+    if (plan && !plan.closest('.track')._dragged) return openSheet(+plan.dataset.plan);
+    const add = e.target.closest('[data-add]');
+    if (add && !add.classList.contains('done')) {
+      const [list, i] = add.dataset.add.split(':');
+      add.classList.add('done');
+      add.textContent = '✓';
+      add.setAttribute('aria-label', 'カートに追加済み');
+      state.cart += 1; updateBadge();
+      toast(`${LISTS[list][+i].n}をカートに追加しました`);
+    }
+  });
+  panel.addEventListener('submit', (e) => {
+    const form = e.target.closest('form.ask');
+    if (!form) return;
+    e.preventDefault();
+    if (state.busy) return;
+    const people = parseInt(form.querySelector('output').textContent, 10);
+    const spice = form.querySelector('input[name^="spice"]:checked').value;
+    const budget = +form.querySelector('input[name^="budget"]:checked').value;
+    form.querySelector('fieldset').disabled = true;
+    addUser(`火鍋 · ${people}人 · ${SPICE_LABEL[spice]} · ${budget ? 'ご予算' + yen(budget) : 'ご予算指定なし'}`);
+    replySets({ people, spice, budget });
+  });
+
+  /* ---------- set detail ---------- */
+  function openSheet(id) {
+    const plan = state.plans.find((p) => p.id === id);
+    if (!plan) return;
+    state.detail = { plan, items: plan.items.map((x) => ({ ...x, on: true })) };
+    $('sheetTitle').innerHTML = `<small>${esc(plan.tag)}</small><h3>${esc(plan.title)}</h3><p>${esc(plan.desc)}</p>${plan.cool ? '<span class="cool">冷凍品あり・クール便でお届け</span>' : ''}`;
+    $('lines').innerHTML = state.detail.items.map((x, i) => `
+      <li class="line" data-line="${i}">
+        <input type="checkbox" checked id="ln-${i}" aria-label="${esc(x.n)}を選択">
+        ${tile()}
+        <div class="li">
+          <label class="li-name" for="ln-${i}">${esc(x.n)}</label>
+          <span class="li-meta">${x.f ? '<span class="frozen">冷凍</span>' : ''}${CAT[x.c].label} · 1点 ${yen(x.p)}</span>
+          <div class="li-row">
+            <span class="stepper" role="group" aria-label="数量">
+              <button type="button" data-q="-1" aria-label="数量を減らす">−</button>
+              <output>${x.q}</output>
+              <button type="button" data-q="1" aria-label="数量を増やす">＋</button>
+            </span>
+            <span class="li-total">${yen(x.p * x.q)}</span>
+          </div>
+        </div>
+      </li>`).join('');
+    $('ship').innerHTML = '<span class="ship-txt"></span><span class="bar"><i></i></span>';
+    syncSheet();
+    $('lines').scrollTop = 0;
+    sheet.inert = false;
+    sheet.classList.add('is-open');
+    setTimeout(() => $('sheetBack').focus({ preventScroll: true }), 60);
+  }
+  function closeSheet() {
+    if (!sheet.classList.contains('is-open')) return;
+    sheet.classList.remove('is-open');
+    sheet.inert = true;
+  }
+  function syncSheet() {
+    const items = state.detail.items;
+    items.forEach((x, i) => {
+      const li = $('lines').children[i];
+      li.classList.toggle('off-line', !x.on);
+      li.querySelector('output').textContent = x.q;
+      li.querySelector('.li-total').textContent = yen(x.p * x.q);
+      li.querySelector('[data-q="-1"]').disabled = x.q <= 1 || !x.on;
+      li.querySelector('[data-q="1"]').disabled = x.q >= 20 || !x.on;
+    });
+    const on = items.filter((x) => x.on);
+    const total = on.reduce((s, x) => s + x.p * x.q, 0);
+    const count = on.reduce((s, x) => s + x.q, 0);
+    const left = FREE_SHIP - total;
+    const ship = $('ship');
+    ship.className = 'ship' + (left <= 0 ? ' done' : '');
+    ship.querySelector('.ship-txt').innerHTML = left <= 0 ? '送料無料の対象です' : `あと<b>${yen(left)}</b>で送料無料`;
+    ship.querySelector('.bar i').style.width = Math.min(100, (total / FREE_SHIP) * 100) + '%';
+    $('sumCount').textContent = `${count}点 合計`;
+    $('sumTotal').innerHTML = `${yen(total)}<small>税込</small>`;
+    const btn = $('addAll');
+    btn.disabled = count === 0;
+    btn.textContent = count ? 'まとめてカートに追加' : '商品を1点以上選んでください';
+    state.detail.total = total; state.detail.count = count;
+  }
+  $('lines').addEventListener('change', (e) => {
+    const li = e.target.closest('[data-line]');
+    if (!li || e.target.type !== 'checkbox') return;
+    state.detail.items[+li.dataset.line].on = e.target.checked;
+    syncSheet();
+  });
+  $('lines').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-q]');
+    if (!b) return;
+    const x = state.detail.items[+b.closest('[data-line]').dataset.line];
+    x.q = Math.min(20, Math.max(1, x.q + +b.dataset.q));
+    syncSheet();
+  });
+  $('sheetBack').addEventListener('click', closeSheet);
+  $('sheetBack2').addEventListener('click', closeSheet);
+  $('addAll').addEventListener('click', () => {
+    const { plan, count, total } = state.detail;
+    state.cart += count; updateBadge();
+    closeSheet();
+    toast(`${count}点をカートに追加しました`);
+    addAI(`<div class="added"><strong>${count}点をカートに追加しました</strong><span>${esc(plan.title)} · ${yen(total)}</span></div><p>ほかに必要なものはありますか？デザートや飲み物もお探しできます。</p>`);
+    setFollow(['カートを見る', 'デザートも探したい', '最初からやり直す']);
+  });
+
+  if (location.hash === '#open') setOpen(true);
+  syncComposer();
+})();
+</script>
+</body>
+</html>
