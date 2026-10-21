@@ -7,10 +7,11 @@ nothing talks to the real Agent API.
 - `index.html`: the chooser page that links to every direction
 - `direction-a/`: 案A, white panel with a soft glow, floating round controls, compact set cards
 - `direction-b/`: 案B, dark full-height panel with drifting aurora light, glass surfaces, sets side by side to swipe
+- `direction-c/`: 案C, AI-search stage: one big box, a step checklist while it works, sets compared in columns
 
 ## Adding a direction
 
-1. Create the next folder, e.g. `direction-c/index.html` (a complete, self-contained HTML page).
+1. Create the next folder, e.g. `direction-d/index.html` (a complete, self-contained HTML page).
 2. Add a card for it in `index.html`.
 3. Commit and push. GitHub Pages republishes within a minute or two.
 

@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+/* base reset (the claude.ai artifact host supplied this; GitHub Pages does not) */
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>ココAI 案C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=Outfit:wght@500;600;700&display=swap">
+<style>
+/* Layout (案C "AI search"): an empty store page; a small ask-bar at the bottom right opens a large
+   centred stage over the dimmed page. Home is one big search box in the middle; once you ask it
+   docks at the bottom. Answers are a comparison table (sets in columns, same rows), and a set's
+   detail opens as a drawer beside the chat. Crisp white, bold ink type, one coral accent. */
+:root{
+  --page:#F6F1EE; --page-ink:#5B504A; --page-ink-2:#766A63;
+  --scrim:rgba(28,16,12,.38);
+  --stage:#FFFFFF; --stage-2:#FAF7F5; --stage-3:#F2ECE8;
+  --line:#ECE4DF; --line-2:#DCD2CC;
+  --ink:#1F1714; --ink-2:#574C46; --ink-3:#74685F;
+  --cta:#D9361F; --cta-hover:#C42E19; --on-cta:#FFFFFF;
+  --coral-ink:#C42E19; --coral-tint:#FFEEE9; --coral-line:#F6B9AC;
+  --ok:#1F7A45; --ok-tint:#E6F4EB; --cool:#245A8E; --cool-tint:#E8F0FA;
+  --shadow:0 40px 90px -30px rgba(40,18,10,.45),0 2px 8px rgba(40,18,10,.08);
+  --shadow-sm:0 10px 26px -14px rgba(40,18,10,.35);
+  --display:'Zen Kaku Gothic New','Noto Sans JP','Hiragino Sans',system-ui,sans-serif;
+  --body:'Noto Sans JP','Hiragino Sans','Yu Gothic UI',system-ui,sans-serif;
+  --num:'Outfit','Noto Sans JP',system-ui,sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#121011; --page-ink:#CDC1BB; --page-ink-2:#A3978F; --scrim:rgba(0,0,0,.55);
+    --stage:#18120F; --stage-2:#211A17; --stage-3:#2B2320; --line:#352B27; --line-2:#4A3D38;
+    --ink:#F7EFEB; --ink-2:#D2C5BE; --ink-3:#A89A92;
+    --coral-ink:#FF8E7A; --coral-tint:#3A211B; --coral-line:#7A3426;
+    --ok:#74D39E; --ok-tint:#16301F; --cool:#93BDEB; --cool-tint:#17283A;
+    --shadow:0 40px 90px -30px rgba(0,0,0,.8),0 0 0 1px #352B27; --shadow-sm:0 10px 26px -14px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#121011; --page-ink:#CDC1BB; --page-ink-2:#A3978F; --scrim:rgba(0,0,0,.55);
+  --stage:#18120F; --stage-2:#211A17; --stage-3:#2B2320; --line:#352B27; --line-2:#4A3D38;
+  --ink:#F7EFEB; --ink-2:#D2C5BE; --ink-3:#A89A92;
+  --coral-ink:#FF8E7A; --coral-tint:#3A211B; --coral-line:#7A3426;
+  --ok:#74D39E; --ok-tint:#16301F; --cool:#93BDEB; --cool-tint:#17283A;
+  --shadow:0 40px 90px -30px rgba(0,0,0,.8),0 0 0 1px #352B27; --shadow-sm:0 10px 26px -14px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+
+html,body{height:100%}
+body{
+  background:var(--page); color:var(--page-ink); font-family:var(--body); font-size:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-font-smoothing:antialiased;
+}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--cta);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums}
+
+.page-note{padding-block:28px;display:flex;flex-direction:column;gap:4px;max-width:520px}
+.page-note strong{font-size:13px;font-weight:700}
+.page-note span{font-size:12.5px;color:var(--page-ink-2);line-height:1.7}
+
+/* ---------- launcher: an ask-bar that types example questions by itself ---------- */
+.launch{
+  position:fixed;z-index:30;
+  right:calc(24px + env(safe-area-inset-right,0px)); bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  width:min(320px,calc(100vw - 48px));height:62px;box-sizing:border-box;
+  display:flex;align-items:center;gap:12px;padding:0 8px 0 20px;
+  border:1px solid var(--line-2);border-radius:999px;background:var(--stage);color:var(--ink);text-align:left;
+  box-shadow:0 16px 36px -14px rgba(40,18,10,.4),0 0 0 4px rgba(217,54,31,.08);
+  transition:transform .25s var(--ease),box-shadow .25s,opacity .2s,visibility 0s;
+}
+.launch:hover{transform:translateY(-2px);box-shadow:0 20px 40px -14px rgba(40,18,10,.45),0 0 0 5px rgba(217,54,31,.14)}
+.launch:active{transform:scale(.98)}
+.chat-open .launch{opacity:0;transform:scale(.92);visibility:hidden;pointer-events:none;transition:transform .2s,opacity .15s,visibility 0s linear .2s}
+.launch .lbl{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.launch .lbl small{font-size:12px;font-weight:700;color:var(--coral-ink);font-family:var(--display)}
+.launch .typer{font-size:14px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:clip;min-height:1.5em}
+.launch .typer::after{content:"";display:inline-block;width:2px;height:1.05em;margin-left:2px;vertical-align:-.15em;background:var(--cta);animation:caret 1s steps(1) infinite}
+@keyframes caret{50%{opacity:0}}
+.launch .go{flex:none;width:44px;height:44px;border-radius:50%;background:var(--cta);color:var(--on-cta);display:grid;place-items:center}
+.badge{position:absolute;top:-6px;right:-4px;min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;border-radius:999px;background:var(--cta);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center;border:2px solid var(--page);font-family:var(--num)}
+
+/* ---------- stage ---------- */
+.scrim{position:fixed;inset:0;z-index:31;background:var(--scrim);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);opacity:0;visibility:hidden;transition:opacity .25s ease,visibility 0s linear .25s}
+.chat-open .scrim{opacity:1;visibility:visible;transition-delay:0s}
+.stage{
+  position:fixed;z-index:32;left:50%;top:50%;
+  width:min(880px,calc(100vw - 48px));height:min(880px,calc(100dvh - 48px));
+  background:var(--stage);color:var(--ink);border-radius:28px;box-shadow:var(--shadow);overflow:hidden;
+  display:flex;flex-direction:column;
+  opacity:0;transform:translate(-50%,-48%) scale(.97);visibility:hidden;
+  transition:opacity .22s ease,transform .34s var(--ease),visibility 0s linear .34s;
+}
+.stage.is-open{opacity:1;transform:translate(-50%,-50%);visibility:visible;transition-delay:0s}
+
+.top{flex:none;display:flex;align-items:center;gap:8px;padding:14px 14px 10px 24px;border-bottom:1px solid transparent;transition:border-color .2s}
+.stage:not(.home) .top{border-bottom-color:var(--line)}
+.mark{flex:1;display:flex;align-items:center;gap:8px;font-family:var(--display);font-size:17px;font-weight:900;letter-spacing:.02em}
+.mark i{width:9px;height:9px;border-radius:50%;background:var(--cta);box-shadow:0 0 0 4px var(--coral-tint)}
+.cb{height:42px;min-width:42px;border-radius:999px;border:1px solid var(--line-2);padding:0;background:var(--stage);color:var(--ink);display:grid;place-items:center;transition:background .15s,border-color .15s}
+.cb:hover{background:var(--stage-2);border-color:var(--ink-3)}
+.cb.cb-text{display:flex;align-items:center;gap:2px;padding:0 16px;font-size:14px;font-weight:700}
+.cb-text .plus{font-size:17px;font-weight:600;line-height:1;margin-right:2px}
+@media (pointer:coarse){.cb{height:44px;min-width:44px}}
+
+.body{flex:1;min-height:0;display:flex;flex-direction:column}
+.scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:28px max(24px,calc((100% - 760px) / 2)) 24px}
+.foot{flex:none;padding:6px max(24px,calc((100% - 760px) / 2)) 16px;position:relative}
+
+/* home: the stage is a search page; heading, then the big box, then suggestions, all centred */
+.stage.home .body{justify-content:center;padding-bottom:6vh}
+.stage.home .scroll{flex:0 0 auto;overflow:visible;padding-bottom:20px}
+.stage.home .foot{width:min(640px,calc(100% - 48px));margin:0 auto;padding:0}
+.welcome{text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
+.welcome h2{margin:0;font-family:var(--display);font-size:clamp(28px,4vw,40px);font-weight:900;line-height:1.3;letter-spacing:.02em;word-break:keep-all;overflow-wrap:anywhere}
+.welcome h2 em{font-style:normal;color:var(--coral-ink)}
+.welcome p{margin:0;font-size:15px;line-height:1.75;color:var(--ink-2);word-break:keep-all;overflow-wrap:anywhere}
+.starters{display:none}
+.stage.home .starters{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:18px;list-style:none;padding:0}
+.stage.home .follow,.stage.home .fine{display:none}
+.starter{height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--line-2);background:var(--stage);font-size:14px;font-weight:700;color:var(--ink);transition:border-color .15s,background .15s}
+.starter:hover{border-color:var(--ink);background:var(--stage-2)}
+.example{display:none}
+.stage.home .example{display:block;margin:14px 0 0;text-align:center;font-size:13px;color:var(--ink-3)}
+
+/* thread */
+.thread{display:flex;flex-direction:column;gap:24px}
+.thread:empty{display:none}
+.in{animation:rise .3s var(--ease) backwards}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+.u{align-self:flex-end;max-width:76%;font-family:var(--display);font-weight:700;font-size:17px;line-height:1.6;color:var(--ink);background:var(--stage-3);padding:10px 16px;border-radius:18px 18px 6px 18px;white-space:pre-wrap;overflow-wrap:anywhere}
+.a{display:flex;flex-direction:column;gap:14px;font-size:15.5px;line-height:1.85;min-width:0}
+.a p{margin:0}
+.a ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;color:var(--ink-2)}
+.small{font-size:12.5px !important;line-height:1.6 !important;color:var(--ink-3)}
+/* thinking: a checklist of what the AI is doing, ticked off step by step */
+.steps{list-style:none;margin:0;padding:14px 18px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-radius:18px;background:var(--stage-2);align-self:flex-start;min-width:260px}
+.steps li{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ink-3);transition:color .2s}
+.steps li.doing{color:var(--ink);font-weight:700}
+.steps li.done{color:var(--ink-2)}
+.mk{flex:none;width:20px;height:20px;border-radius:50%;border:2px solid var(--line-2);box-sizing:border-box;display:grid;place-items:center;font-size:12px;font-weight:800;line-height:1}
+.doing .mk{border-color:var(--cta);border-right-color:transparent;animation:spin .8s linear infinite}
+.done .mk{border-color:var(--cta);background:var(--cta);color:#fff}
+.done .mk::before{content:"✓"}
+@keyframes spin{to{transform:rotate(1turn)}}
+
+/* clarify: big, plain controls */
+.ask{margin:0;padding:20px;border:1px solid var(--line);border-radius:22px;background:var(--stage-2)}
+.ask fieldset{border:0;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px 24px;min-width:0}
+.ask fieldset:disabled{opacity:.5}
+.q{display:flex;flex-direction:column;gap:9px;min-width:0}
+.q-label{font-family:var(--display);font-size:14px;font-weight:700;color:var(--ink)}
+.stepper{display:inline-flex;align-items:center;align-self:flex-start;border:1px solid var(--line-2);border-radius:999px;background:var(--stage);height:46px}
+.stepper button{width:46px;height:44px;border:0;background:none;border-radius:999px;font-size:20px;font-weight:600;line-height:1;color:var(--ink)}
+.stepper button:hover{background:var(--stage-2)}
+.stepper button:disabled{color:var(--line-2);cursor:default;background:none}
+.stepper output{min-width:4ch;text-align:center;font-size:17px;font-weight:700;font-family:var(--num)}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{position:relative}
+.opt input{position:absolute;opacity:0;width:1px;height:1px}
+.opt span{display:inline-flex;align-items:center;height:42px;padding:0 16px;border-radius:12px;border:1px solid var(--line-2);background:var(--stage);font-size:14px;font-weight:700;color:var(--ink-2);cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.opt span:hover{border-color:var(--ink-3)}
+.opt input:checked + span{background:var(--coral-tint);border-color:var(--cta);color:var(--coral-ink);box-shadow:inset 0 0 0 1px var(--cta)}
+.opt input:focus-visible + span{outline:2px solid var(--cta);outline-offset:2px}
+.ask .submit{grid-column:1 / -1}
+.btn-primary{height:52px;border:0;border-radius:14px;background:var(--cta);color:var(--on-cta);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;width:100%;transition:background .15s,transform .15s,opacity .15s}
+.btn-primary:hover{background:var(--cta-hover)}
+.btn-primary:active{transform:scale(.99)}
+.btn-primary:disabled{opacity:.4;cursor:default}
+.btn-ghost{height:52px;border:1px solid var(--line-2);border-radius:14px;background:var(--stage);font-size:15px;font-weight:700;padding:0 18px;flex:none}
+.btn-ghost:hover{border-color:var(--ink-3)}
+
+/* ---------- comparison table: sets in columns, the same rows in each ---------- */
+.compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;align-items:stretch}
+.col{position:relative;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:20px;background:var(--stage);padding:14px 14px 14px;min-width:0}
+.col.best{border:2px solid var(--cta);padding:13px;box-shadow:0 14px 34px -18px rgba(217,54,31,.6)}
+.ribbon{position:absolute;top:-12px;left:14px;font-family:var(--display);font-size:12.5px;font-weight:900;color:#fff;background:var(--cta);padding:3px 12px;border-radius:999px;letter-spacing:.04em}
+.mosaic{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.mosaic span{aspect-ratio:1;border-radius:10px;background:linear-gradient(140deg,var(--stage-2),var(--stage-3));box-shadow:inset 0 0 0 1px var(--line)}
+.mosaic .more{display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--ink-3);font-family:var(--num)}
+.col h4{margin:14px 0 2px;font-family:var(--display);font-size:16px;font-weight:700;line-height:1.5;line-break:strict;text-wrap:pretty}
+.col .tag{font-size:12.5px;color:var(--ink-3)}
+.rows{margin:12px 0 14px;display:flex;flex-direction:column}
+.rows div{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.rows dt{color:var(--ink-3)}
+.rows dd{margin:0;font-weight:700;text-align:right}
+.rows .price dd{font-family:var(--num);font-size:22px;font-weight:700;letter-spacing:-.01em}
+.rows .price dd small{font-family:var(--body);font-size:12px;font-weight:500;color:var(--ink-3);margin-left:3px}
+.rows .ok{color:var(--ok)}.rows .over{color:var(--coral-ink)}
+.rows .cool{color:var(--cool)}
+.col .see{margin-top:auto;height:46px;border-radius:12px;border:1px solid var(--line-2);background:var(--stage);font-size:14px;font-weight:700;color:var(--ink);transition:background .15s,border-color .15s}
+.col .see:hover{border-color:var(--ink)}
+.col.best .see{background:var(--cta);border-color:var(--cta);color:#fff}
+.col.best .see:hover{background:var(--cta-hover)}
+
+/* product grid (deals, recent, search) */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.prod{display:flex;flex-direction:column;gap:6px;padding:8px 8px 10px;border:1px solid var(--line);border-radius:18px;background:var(--stage)}
+.prod .pic{aspect-ratio:1;border-radius:12px;background:linear-gradient(140deg,var(--stage-2),var(--stage-3));box-shadow:inset 0 0 0 1px var(--line);position:relative}
+.off{position:absolute;top:6px;left:6px;font-size:12px;font-weight:800;background:var(--cta);color:#fff;border-radius:999px;padding:0 8px;font-family:var(--num)}
+.prod b{font-size:13px;font-weight:700;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:3em;padding:0 2px}
+.prod-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 2px}
+.prod-foot .p{display:flex;flex-direction:column;line-height:1.25}
+.prod-foot .p strong{font-family:var(--num);font-size:17px;font-weight:700;color:var(--coral-ink)}
+.prod-foot .p strong.plain{color:var(--ink)}
+.prod-foot .p s{font-size:12px;color:var(--ink-3);font-family:var(--num)}
+.add{height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line-2);background:var(--stage);font-size:13px;font-weight:700;transition:background .15s,color .15s,border-color .15s}
+.add:hover{border-color:var(--ink)}
+.add.done{background:var(--ok-tint);color:var(--ok);border-color:transparent}
+
+.added{display:flex;flex-direction:column;gap:2px;padding:14px 18px;border-radius:16px;background:var(--ok-tint)}
+.added strong{font-size:15px;color:var(--ok)}
+.added span{font-size:13px;color:var(--ink-2)}
+
+/* composer */
+.follow{display:flex;gap:6px;overflow-x:auto;padding:8px 2px 12px;margin:-8px -2px 0;scrollbar-width:none}
+.follow::-webkit-scrollbar{display:none}
+.follow:empty{display:none}
+.chip{flex:none;height:38px;padding:0 15px;border-radius:999px;border:1px solid var(--line-2);background:var(--stage);font-size:13.5px;font-weight:700;color:var(--ink-2);white-space:nowrap;transition:border-color .15s,color .15s}
+.chip:hover{border-color:var(--ink);color:var(--ink)}
+.composer{display:flex;align-items:flex-end;gap:8px;border:1.5px solid var(--line-2);border-radius:20px;padding:7px 7px 7px 20px;background:var(--stage);box-shadow:0 10px 30px -18px rgba(40,18,10,.4);transition:border-color .15s,box-shadow .15s}
+.composer:focus-within{border-color:var(--cta);box-shadow:0 0 0 4px var(--coral-tint),0 10px 30px -18px rgba(40,18,10,.4)}
+.stage.home .composer{padding:10px 10px 10px 24px;border-radius:24px;box-shadow:0 22px 50px -24px rgba(40,18,10,.5)}
+.composer textarea{flex:1;min-width:0;border:0;outline:0;resize:none;background:transparent;font-size:16px;line-height:1.5;padding:9px 0;max-height:140px;height:42px;box-sizing:border-box}
+.stage.home .composer textarea{font-size:17px}
+.composer textarea::placeholder{color:var(--ink-3)}
+.send{flex:none;height:44px;padding:0 18px;border:0;border-radius:14px;background:var(--stage-3);color:var(--ink-3);font-size:14px;font-weight:700;transition:background .2s,color .2s}
+.send.ready{background:var(--cta);color:#fff}
+.send.ready:hover{background:var(--cta-hover)}
+.send:disabled{cursor:default}
+.fine{margin:9px 0 0;text-align:center;font-size:12px;line-height:1.5;color:var(--ink-3)}
+
+/* set detail: a drawer from the right; the chat stays visible beside it on wide screens */
+.drawer-scrim{position:absolute;inset:0;z-index:5;background:rgba(20,10,6,.18);opacity:0;visibility:hidden;transition:opacity .25s,visibility 0s linear .25s}
+.drawer-scrim.on{opacity:1;visibility:visible;transition-delay:0s}
+.sheet{position:absolute;top:0;right:0;bottom:0;z-index:6;width:min(460px,100%);background:var(--stage);border-left:1px solid var(--line);box-shadow:-30px 0 60px -30px rgba(40,18,10,.35);display:flex;flex-direction:column;visibility:hidden;transform:translateX(100%);transition:transform .34s var(--ease),visibility 0s linear .34s}
+.sheet.is-open{transform:none;visibility:visible;transition-delay:0s}
+.sh-top{flex:none;display:flex;align-items:center;gap:8px;padding:14px 14px 10px 20px}
+.sh-top span{flex:1;font-size:13px;font-weight:700;color:var(--ink-3)}
+.sh-title{flex:none;display:flex;flex-direction:column;gap:5px;padding:4px 22px 14px}
+.sh-title small{font-size:12.5px;font-weight:700;color:var(--coral-ink)}
+.sh-title h3{margin:0;font-family:var(--display);font-size:22px;line-height:1.45;font-weight:900;text-wrap:balance}
+.sh-title p{margin:2px 0 0;font-size:13.5px;line-height:1.75;color:var(--ink-2)}
+.sh-title .coolnote{align-self:flex-start;margin-top:4px;font-size:12.5px;font-weight:700;color:var(--cool);background:var(--cool-tint);border-radius:6px;padding:1px 8px}
+.lines{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin:0;padding:0 22px;list-style:none;border-top:1px solid var(--line);scrollbar-width:thin}
+.line{display:grid;grid-template-columns:22px 56px minmax(0,1fr);gap:12px;align-items:start;padding:14px 0;border-bottom:1px solid var(--line);transition:opacity .2s}
+.line:last-child{border-bottom:0}
+.line.off-line{opacity:.45}
+.line input[type=checkbox]{width:20px;height:20px;margin:18px 0 0;accent-color:var(--cta);cursor:pointer}
+.tile{width:56px;height:56px;border-radius:12px;background:linear-gradient(140deg,var(--stage-2),var(--stage-3));box-shadow:inset 0 0 0 1px var(--line)}
+.li{min-width:0;display:flex;flex-direction:column;gap:6px}
+.li-name{font-size:14.5px;font-weight:700;line-height:1.5}
+.li-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:12.5px;color:var(--ink-3)}
+.frozen{font-size:12px;font-weight:700;color:var(--cool);background:var(--cool-tint);padding:0 6px;border-radius:5px}
+.li-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.li-row .stepper{height:38px}
+.li-row .stepper button{width:38px;height:36px;font-size:18px}
+.li-row .stepper output{min-width:3ch;font-size:15px}
+.li-total{font-family:var(--num);font-size:17px;font-weight:700}
+.sh-foot{flex:none;padding:14px 22px 18px;display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);background:var(--stage-2)}
+.ship{display:flex;flex-direction:column;gap:7px;font-size:13px;color:var(--ink-2)}
+.ship b{color:var(--ink);font-family:var(--num)}
+.bar{height:8px;border-radius:999px;background:var(--stage-3);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:inherit;background:var(--cta);transition:width .4s var(--ease)}
+.ship.done{color:var(--ok);font-weight:700}
+.ship.done .bar i{background:var(--ok)}
+.total-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.total-row span{font-size:13.5px;color:var(--ink-3)}
+.total-row strong{font-family:var(--num);font-size:30px;font-weight:700;letter-spacing:-.015em}
+.total-row strong small{font-family:var(--body);font-size:12.5px;font-weight:500;color:var(--ink-3);margin-left:4px;letter-spacing:0}
+.actions{display:flex;gap:8px}
+
+.toast{position:absolute;z-index:8;left:50%;top:76px;transform:translate(-50%,-10px);opacity:0;pointer-events:none;padding:11px 20px;border-radius:999px;background:var(--ink);color:var(--stage);font-size:14px;font-weight:700;white-space:nowrap;box-shadow:var(--shadow-sm);transition:opacity .2s,transform .3s var(--ease)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* phones: the stage fills the screen; the ask-bar shrinks to its label */
+@media (max-width:600px){
+  .stage{left:0;top:0;width:100%;height:100%;border-radius:0;transform:translateY(24px);
+    padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}
+  .stage.is-open{transform:none}
+  .top{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .scroll{padding:22px max(16px,env(safe-area-inset-right,0px)) 20px max(16px,env(safe-area-inset-left,0px))}
+  .foot{padding:6px max(12px,env(safe-area-inset-right,0px)) 12px max(12px,env(safe-area-inset-left,0px))}
+  .stage.home .foot{width:auto;padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+  .launch{width:auto;padding-left:18px}
+  .launch .typer{display:none}
+  .launch .lbl small{font-size:15px;color:var(--ink)}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  /* stacked on a phone: recommended set first, photos in one short row */
+  .col.best{order:-1;margin-top:10px}
+  .mosaic{grid-template-columns:repeat(6,1fr)}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+  .launch .typer::after{display:none}
+}
+</style>
+</head>
+<body>
+
+<main class="page-note">
+  <strong>ココAI チャット プロトタイプ · 案C</strong>
+  <span>アシスタントを試すための空のページです。右下のボタンから開いてください。商品・価格はすべてサンプルです。</span>
+</main>
+
+<button type="button" class="launch" id="launch" aria-controls="stage" aria-expanded="false" aria-label="ココAIに相談する">
+  <span class="lbl" aria-hidden="true"><small>ココAIに相談</small><span class="typer" id="typer"></span></span>
+  <span class="go" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span>
+  <span class="badge" id="badge" hidden>0</span>
+</button>
+
+<div class="scrim" id="scrim" aria-hidden="true"></div>
+<section class="stage home" id="stage" role="dialog" aria-modal="true" aria-label="ココAI お買い物アシスタント" inert>
+  <div class="top">
+    <span class="mark" aria-hidden="true"><i></i>ココAI</span>
+    <button type="button" class="cb cb-text" id="newBtn"><span class="plus" aria-hidden="true">＋</span>新しい相談</button>
+    <button type="button" class="cb" id="closeBtn" aria-label="閉じる"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+
+  <div class="body">
+    <div class="scroll" id="scroll">
+      <div class="welcome" id="welcome">
+        <h2>何を<em>お探し</em>ですか？</h2>
+        <p>料理・人数・ご予算を書くだけで、まとめて買えるセットにしてご提案します。</p>
+      </div>
+      <div class="thread" id="thread" aria-live="polite"></div>
+    </div>
+
+    <div class="foot">
+      <div class="follow" id="follow"></div>
+      <form class="composer" id="composer">
+        <label class="sr" for="msg">ココAIへのメッセージ</label>
+        <textarea id="msg" rows="1" placeholder="例：週末に4人で火鍋、辛くないもの、5,000円以内" autocomplete="off"></textarea>
+        <button type="submit" class="send" id="sendBtn" disabled>相談する</button>
+      </form>
+      <ul class="starters" id="starters"></ul>
+      <p class="example">ことばで書くだけで大丈夫です。あとから「もっと安く」なども頼めます。</p>
+      <p class="fine">AIの回答は正確でない場合があります。価格・在庫・アレルギー情報は商品ページでご確認ください。</p>
+    </div>
+  </div>
+
+  <div class="drawer-scrim" id="drawerScrim" aria-hidden="true"></div>
+  <div class="sheet" id="sheet" role="region" aria-label="セット内容" inert>
+    <div class="sh-top">
+      <span>セット内容</span>
+      <button type="button" class="cb" id="sheetBack" aria-label="セット内容を閉じる"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="sh-title" id="sheetTitle"></div>
+    <ul class="lines" id="lines"></ul>
+    <div class="sh-foot">
+      <div class="ship" id="ship"></div>
+      <div class="total-row"><span id="sumCount"></span><strong id="sumTotal"></strong></div>
+      <div class="actions">
+        <button type="button" class="btn-ghost" id="sheetBack2">閉じる</button>
+        <button type="button" class="btn-primary" id="addAll"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+</section>
+
+<script>
+(() => {
+  document.documentElement.lang = 'ja';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = (s) => document.getElementById(s);
+  const yen = (n) => '¥' + Math.round(n).toLocaleString('ja-JP');
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const wait = (ms) => new Promise((r) => setTimeout(r, reduce ? 120 : ms));
+  const FREE_SHIP = 4980;
+
+  const CAT = {
+    soup: { label: 'スープの素' }, fish: { label: '魚団子' }, tofu: { label: '豆腐・湯葉' },
+    noodle: { label: '麺・春雨' }, sauce: { label: 'つけだれ' }, drink: { label: '飲料' },
+    veg: { label: '野菜・きのこ' }, meat: { label: '肉' }, snack: { label: 'お菓子' },
+  };
+
+  /* ---------- sample data (same as 案A and 案B, so only the design differs) ---------- */
+  const SPICY = { n: '海底捞 牛油麻辣火鍋の素', c: 'soup', p: 594 };
+  const BASE = [
+    { id: 1, tag: '定番・手軽', title: 'きのこスープの火鍋スターター',
+      desc: 'やさしいきのこスープに湯葉と春雨、胡麻だれを合わせた基本のセット。ご予算に余裕が残ります。',
+      items: [
+        { n: '小肥羊 菌湯火鍋の素', c: 'soup', p: 648 },
+        { n: '海底捞 豆皮', c: 'tofu', p: 346 },
+        { n: '龍口 緑豆春雨 250g', c: 'noodle', p: 298 },
+        { n: 'えのき茸 200g', c: 'veg', p: 128 },
+        { n: '双葉 胡麻だれ（白）', c: 'sauce', p: 498 },
+        { n: '王老吉 涼茶 310ml', c: 'drink', p: 218, q: 2 },
+      ] },
+    { id: 2, tag: 'あっさり・具だくさん', title: '清湯スープと2種の魚団子セット',
+      desc: 'あっさりした清湯スープに、2種類の魚団子と湯葉。つけだれと飲み物も入っています。',
+      items: [
+        { n: '小肥羊 清湯火鍋の素', c: 'soup', p: 669 },
+        { n: 'NK 正宗福州魚丸', c: 'fish', p: 879, f: true },
+        { n: '郷音 八珍玉食（八種花様丸子）', c: 'fish', p: 1167, f: true },
+        { n: '海底捞 豆皮', c: 'tofu', p: 346 },
+        { n: '海底捞 極太さつまいも春雨', c: 'noodle', p: 320 },
+        { n: '双葉 胡麻だれ（白）', c: 'sauce', p: 498 },
+        { n: '王老吉 涼茶 310ml', c: 'drink', p: 218, q: 2 },
+      ] },
+    { id: 3, tag: '2種のスープ', title: 'トマト＆清湯の二色鍋セット',
+      desc: '辛くない2種のスープを食べ比べ。魚団子、冷凍豆腐、腐竹、春雨、胡麻だれまで揃います。',
+      items: [
+        { n: '小肥羊 清湯火鍋の素', c: 'soup', p: 669 },
+        { n: '海底捞 トマト火鍋の素', c: 'soup', p: 594 },
+        { n: 'NK 正宗福州魚丸', c: 'fish', p: 879, f: true },
+        { n: '冷凍豆腐 400g', c: 'tofu', p: 298, f: true },
+        { n: '腐竹（湯葉スティック）', c: 'tofu', p: 398 },
+        { n: '海底捞 極太さつまいも春雨', c: 'noodle', p: 320 },
+        { n: 'えのき茸 200g', c: 'veg', p: 128 },
+        { n: '双葉 胡麻だれ（白）', c: 'sauce', p: 498 },
+        { n: '王老吉 涼茶 310ml', c: 'drink', p: 218, q: 2 },
+      ] },
+  ];
+  const DEALS = [
+    { n: '海底捞 牛油麻辣火鍋の素 220g', c: 'soup', p: 594, was: 660 },
+    { n: '康師傅 紅焼牛肉麺 5食入', c: 'noodle', p: 680, was: 756 },
+    { n: '旺旺 雪餅 520g', c: 'snack', p: 598, was: 698 },
+    { n: '王老吉 涼茶 310ml × 6本', c: 'drink', p: 1180, was: 1308 },
+  ];
+  const RECENT = [
+    { n: 'NK 正宗福州魚丸', c: 'fish', p: 879 },
+    { n: '双葉 胡麻だれ（白）', c: 'sauce', p: 498 },
+    { n: '海底捞 豆皮', c: 'tofu', p: 346 },
+  ];
+  const SNACKS = [
+    { n: '旺旺 雪餅 520g', c: 'snack', p: 598, was: 698 },
+    { n: '徐福記 沙琪瑪 469g', c: 'snack', p: 548 },
+    { n: '衛龍 大面筋 102g', c: 'snack', p: 238 },
+  ];
+  const LISTS = { deals: DEALS, recent: RECENT, snacks: SNACKS };
+  const STARTERS = [
+    { title: '火鍋パーティー', say: '火鍋パーティーをしたいので、セットを提案してください' },
+    { title: '本日のお得', say: '今日のセール商品を見せて' },
+    { title: '最近見た商品', say: '最近見た商品を見せて' },
+    { title: 'ココAIでできること', say: 'ココAIでできることを教えて' },
+  ];
+  const EXAMPLES = ['週末に4人で火鍋をしたい', '辛くない鍋セットを5,000円で', '子どもと食べる中華のおやつ', '今日のセール品でおつまみ'];
+  const SPICE_LABEL = { none: '辛くない', mild: 'ピリ辛', spicy: '辛口', half: '半々（鴛鴦鍋）' };
+
+  // a phone-width box fits about 13 characters: keep the example on one line
+  const narrow = matchMedia('(max-width: 600px)');
+  const setPlaceholder = () => { $('msg').placeholder = narrow.matches ? '例：4人で火鍋、辛くないもの' : '例：週末に4人で火鍋、辛くないもの、5,000円以内'; };
+  setPlaceholder();
+  narrow.addEventListener('change', setPlaceholder);
+
+  /* ---------- state + elements ---------- */
+  const state = { open: false, busy: false, cart: 0, prefs: null, plans: [], detail: null, uid: 0 };
+  const stage = $('stage'), launch = $('launch'), scroll = $('scroll'), thread = $('thread'), welcome = $('welcome');
+  const input = $('msg'), sendBtn = $('sendBtn'), follow = $('follow'), sheet = $('sheet');
+
+  $('starters').innerHTML = STARTERS.map((s, i) => `<li><button type="button" class="starter" data-starter="${i}">${s.title}</button></li>`).join('');
+
+  /* ---------- launcher: types example questions, one after another ---------- */
+  (function typeExamples() {
+    const el = $('typer');
+    if (reduce) { el.textContent = EXAMPLES[0]; return; }
+    let k = 0;
+    const run = async () => {
+      for (;;) {
+        if (state.open) { await new Promise((r) => setTimeout(r, 400)); continue; }
+        const text = EXAMPLES[k++ % EXAMPLES.length];
+        for (let i = 1; i <= text.length; i++) { el.textContent = text.slice(0, i); await new Promise((r) => setTimeout(r, 85)); }
+        await new Promise((r) => setTimeout(r, 1800));
+        for (let i = text.length; i >= 0; i--) { el.textContent = text.slice(0, i); await new Promise((r) => setTimeout(r, 28)); }
+        await new Promise((r) => setTimeout(r, 300));
+      }
+    };
+    run();
+  })();
+
+  /* ---------- open / close ---------- */
+  function setOpen(v) {
+    state.open = v;
+    stage.classList.toggle('is-open', v);
+    stage.inert = !v;
+    document.body.classList.toggle('chat-open', v);
+    launch.setAttribute('aria-expanded', String(v));
+    launch.inert = v;
+    if (v) setTimeout(() => input.focus({ preventScroll: true }), 150);
+    else { closeSheet(); launch.focus({ preventScroll: true }); }
+    updateBadge();
+  }
+  launch.addEventListener('click', () => setOpen(!state.open));
+  $('closeBtn').addEventListener('click', () => setOpen(false));
+  $('scrim').addEventListener('click', () => setOpen(false));
+  stage.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (sheet.classList.contains('is-open')) closeSheet(); else setOpen(false);
+  });
+  function updateBadge() {
+    const b = $('badge');
+    b.textContent = state.cart;
+    b.hidden = state.cart === 0 || state.open;
+  }
+
+  /* ---------- composer ---------- */
+  function syncComposer() {
+    // empty: back to the one-line CSS height (a measurement taken before first layout can read 3 lines)
+    input.style.height = 'auto';
+    input.style.height = input.value ? Math.min(input.scrollHeight, 140) + 'px' : '';
+    const ready = input.value.trim().length > 0 && !state.busy;
+    sendBtn.disabled = !ready;
+    sendBtn.classList.toggle('ready', ready);
+  }
+  input.addEventListener('input', syncComposer);
+  input.addEventListener('keydown', (e) => {
+    // isComposing: the Enter that confirms a kana→kanji conversion must not send the message
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('composer').requestSubmit(); }
+  });
+  $('composer').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text || state.busy) return;
+    input.value = '';
+    syncComposer();
+    send(text);
+  });
+
+  /* ---------- thread primitives ---------- */
+  function startThread() {
+    // the search box leaves the middle and docks at the bottom once a question is asked
+    if (!welcome.hidden) { welcome.hidden = true; stage.classList.remove('home'); }
+  }
+  function reveal(node) {
+    requestAnimationFrame(() => {
+      const behavior = reduce ? 'auto' : 'smooth';
+      if (node.offsetHeight > scroll.clientHeight * 0.7) scroll.scrollTo({ top: node.offsetTop - 20, behavior });
+      else scroll.scrollTo({ top: scroll.scrollHeight, behavior });
+    });
+  }
+  function addUser(text) {
+    startThread();
+    const d = document.createElement('div');
+    d.className = 'u in';
+    d.textContent = text;
+    thread.appendChild(d);
+    reveal(d);
+  }
+  function addAI(html) {
+    startThread();
+    const d = document.createElement('div');
+    d.className = 'a in';
+    d.innerHTML = html;
+    thread.appendChild(d);
+    reveal(d);
+    return d;
+  }
+  /* thinking: show each step the AI takes and tick it off */
+  async function think(steps) {
+    state.busy = true; syncComposer(); setFollow([]);
+    const d = document.createElement('div');
+    d.className = 'a in';
+    d.innerHTML = `<ol class="steps" aria-label="ココAIが作業中">${steps.map((s) => `<li><span class="mk" aria-hidden="true"></span>${s}</li>`).join('')}</ol>`;
+    thread.appendChild(d);
+    reveal(d);
+    const lis = d.querySelectorAll('li');
+    for (let i = 0; i < lis.length; i++) {
+      lis[i].className = 'doing';
+      await wait(800);
+      lis[i].className = 'done';
+    }
+    await wait(250);
+    d.remove();
+    state.busy = false; syncComposer();
+  }
+  function setFollow(list) {
+    follow.innerHTML = list.map((t) => `<button type="button" class="chip" data-say="${esc(t)}">${esc(t)}</button>`).join('');
+  }
+  let toastTimer;
+  function toast(text) {
+    const t = $('toast');
+    t.textContent = text;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  /* ---------- routing ---------- */
+  function send(text) { addUser(text); route(text); }
+  function route(t) {
+    if (state.prefs) {
+      if (/辛/.test(t)) { state.prefs.spice = 'spicy'; return replySets(state.prefs, 'スープを牛油麻辣（辛口）に入れ替えました。'); }
+      if (/肉/.test(t)) { state.prefs.meat = true; return replySets(state.prefs, 'すべてのセットに冷凍ラム肉スライスを追加しました。'); }
+      if (/安|抑え/.test(t)) { state.prefs.lean = true; return replySets(state.prefs, '飲み物と野菜を外して、価格を抑えました。'); }
+    }
+    if (/やり直|最初から/.test(t)) return newChat();
+    if (/カート/.test(t)) return replyCart();
+    if (/セール|お得|割引/.test(t)) return replyDeals();
+    if (/できること|使い方|注意/.test(t)) return replyHow();
+    if (/最近|見た商品|再開/.test(t)) return replyRecent();
+    if (/鍋|パーティ|人で|人分|友人|家族/.test(t)) return replyClarify();
+    return replySearch(t);
+  }
+
+  /* ---------- replies ---------- */
+  async function replyClarify() {
+    await think(['ご要望を確認']);
+    const id = ++state.uid;
+    const opt = (name, value, label, checked) => `<label class="opt"><input type="radio" name="${name}-${id}" value="${value}"${checked ? ' checked' : ''}><span>${label}</span></label>`;
+    addAI(`
+      <p>いいですね！3つだけ選んでください。人数に合わせて量を調整したセットをご用意します。</p>
+      <form class="ask" data-ask="${id}">
+        <fieldset>
+          <div class="q">
+            <span class="q-label" id="ppl-${id}">人数</span>
+            <span class="stepper" role="group" aria-labelledby="ppl-${id}">
+              <button type="button" data-step="-1" aria-label="人数を減らす">−</button>
+              <output aria-live="polite">4人</output>
+              <button type="button" data-step="1" aria-label="人数を増やす">＋</button>
+            </span>
+          </div>
+          <div class="q" role="radiogroup" aria-label="辛さ">
+            <span class="q-label">辛さ</span>
+            <div class="opts">${opt('spice', 'none', '辛くない', true)}${opt('spice', 'mild', 'ピリ辛')}${opt('spice', 'spicy', '辛口')}${opt('spice', 'half', '半々（鴛鴦鍋）')}</div>
+          </div>
+          <div class="q" role="radiogroup" aria-label="ご予算">
+            <span class="q-label">ご予算</span>
+            <div class="opts">${opt('budget', '3000', '¥3,000')}${opt('budget', '5000', '¥5,000', true)}${opt('budget', '8000', '¥8,000')}${opt('budget', '0', '指定なし')}</div>
+          </div>
+          <div class="submit"><button type="submit" class="btn-primary">この条件でセットを作る</button></div>
+        </fieldset>
+      </form>`);
+  }
+
+  function buildPlans(prefs) {
+    const k = prefs.people / 4;
+    return BASE.map((b) => {
+      let items = b.items.map((it) => ({ ...it }));
+      let tag = b.tag;
+      if (prefs.spice === 'spicy') {
+        items[items.findIndex((x) => x.c === 'soup')] = { ...SPICY };
+      } else if (prefs.spice === 'half') {
+        if (b.id === 3) { items[1] = { ...SPICY }; tag = '半々（鴛鴦鍋）'; }
+        else items.splice(1, 0, { ...SPICY });
+      }
+      if (prefs.meat) items.splice(1, 0, { n: '冷凍 ラム肉スライス 500g', c: 'meat', p: 798, f: true, q: Math.ceil(prefs.people / 4) });
+      if (prefs.lean) items = items.filter((x) => x.c !== 'drink' && x.c !== 'veg');
+      items = items.map((x) => {
+        const base = x.q || 1;
+        const q = x.c === 'soup' ? (prefs.people > 6 ? 2 : 1) : x.c === 'meat' ? base : Math.max(1, Math.round(base * k));
+        return { ...x, q };
+      });
+      const total = items.reduce((s, x) => s + x.p * x.q, 0);
+      const count = items.reduce((s, x) => s + x.q, 0);
+      return { ...b, tag, items, total, count, cool: items.some((x) => x.f) };
+    });
+  }
+  function pickBest(plans, budget) {
+    if (!budget) return plans[1].id;
+    const fit = plans.filter((p) => p.total <= budget).sort((a, b) => b.total - a.total);
+    return (fit[0] || [...plans].sort((a, b) => a.total - b.total)[0]).id;
+  }
+  /* one column of the comparison: every set answers the same four rows */
+  function setCol(p, prefs, bestId) {
+    const n = p.items.length;
+    const mosaic = Array.from({ length: 6 }, (_, i) => (i === 5 && n > 6 ? `<span class="more">+${n - 5}</span>` : i < n ? '<span></span>' : '')).join('');
+    let budgetRow = '';
+    if (prefs.budget) {
+      const ok = p.total <= prefs.budget;
+      budgetRow = `<div><dt>ご予算</dt><dd class="${ok ? 'ok' : 'over'}">${ok ? '✓ 予算内' : `${yen(p.total - prefs.budget)} 超過`}</dd></div>`;
+    }
+    const best = p.id === bestId;
+    return `
+      <article class="col${best ? ' best' : ''}" aria-label="${esc(p.title)}">
+        ${best ? '<span class="ribbon">おすすめ</span>' : ''}
+        <div class="mosaic" aria-hidden="true">${mosaic}</div>
+        <h4>${esc(p.title)}</h4>
+        <span class="tag">${esc(p.tag)}</span>
+        <dl class="rows">
+          <div class="price"><dt>価格</dt><dd class="num">${yen(p.total)}<small>税込</small></dd></div>
+          <div><dt>点数</dt><dd>${p.count}点</dd></div>
+          <div><dt>配送</dt><dd class="${p.cool ? 'cool' : ''}">${p.cool ? 'クール便' : '常温'}</dd></div>
+          ${budgetRow}
+        </dl>
+        <button type="button" class="see" data-plan="${p.id}">このセットを見る</button>
+      </article>`;
+  }
+  async function replySets(prefs, lead) {
+    state.prefs = { ...prefs };
+    await think(['ご要望を確認', '在庫から商品を探す', 'ご予算に合わせてセットを組み立てる']);
+    const plans = buildPlans(state.prefs);
+    state.plans = plans;
+    const bestId = pickBest(plans, prefs.budget);
+    const best = plans.find((p) => p.id === bestId);
+    const intro = lead || `${prefs.people}人分のセットを3つ並べました。おすすめは「${best.title}」です。`;
+    addAI(`<p>${esc(intro)}</p>
+      <div class="compare">${plans.map((p) => setCol(p, state.prefs, bestId)).join('')}</div>
+      <p class="small">価格・在庫は変わる場合があります。「このセットを見る」で数量の変更や商品の削除ができます。</p>`);
+    setFollow(['もっと辛くしたい', 'お肉を追加して', 'もう少し安く', '最初からやり直す']);
+  }
+  function prodCard(x, i, list) {
+    const off = x.was ? Math.round((1 - x.p / x.was) * 100) : 0;
+    return `
+      <div class="prod">
+        <span class="pic">${off ? `<span class="off">${off}%OFF</span>` : ''}</span>
+        <b>${esc(x.n)}</b>
+        <span class="prod-foot">
+          <span class="p"><strong class="${x.was ? '' : 'plain'}">${yen(x.p)}</strong>${x.was ? `<s>${yen(x.was)}</s>` : ''}</span>
+          <button type="button" class="add" data-add="${list}:${i}" aria-label="${esc(x.n)}をカートに追加">追加</button>
+        </span>
+      </div>`;
+  }
+  const prodGrid = (list, key) => `<div class="grid">${list.map((x, i) => prodCard(x, i, key)).join('')}</div>`;
+  async function replyDeals() {
+    await think(['本日の価格を確認']);
+    addAI(`<p>本日のセール商品です。「追加」でそのままカートに入ります。</p>${prodGrid(DEALS, 'deals')}`);
+    setFollow(['これで火鍋セットを組みたい', 'お菓子も見たい']);
+  }
+  async function replyRecent() {
+    await think(['最近チェックした商品を確認']);
+    addAI(`<p>最近チェックした商品です。3点とも在庫があります。</p>${prodGrid(RECENT, 'recent')}`);
+    setFollow(['これを使って火鍋セットを組みたい', '今日のセールは？']);
+  }
+  async function replySearch(text) {
+    await think(['在庫から商品を探す']);
+    addAI(`<p>「${esc(text)}」に合いそうな商品です。誰と食べるか教えていただければ、セットにまとめます。</p>${prodGrid(SNACKS, 'snacks')}`);
+    setFollow(['火鍋パーティーを計画したい', '今日のセールは？']);
+  }
+  async function replyHow() {
+    await think(['ご要望を確認']);
+    addAI(`<p>ココAIは、KokoMartの在庫商品からお買い物セットを組み立てるアシスタントです。作りたい料理やシーン、人数、ご予算を教えていただくと、まとめてカートに入れられるセットを提案します。</p>
+      <ul><li>提案するのは、いま在庫がある商品だけです。</li><li>価格はすべて税込です。アレルギー情報は各商品ページでご確認ください。</li><li>ご注文やお支払い情報の確認はできません。お会計はいつも通りお客様ご自身で行います。</li></ul>`);
+    setFollow(['火鍋パーティーを計画したい', '今日のセールは？']);
+  }
+  async function replyCart() {
+    await think(['カートを確認']);
+    addAI(state.cart
+      ? `<p>カートには${state.cart}点入っています。実際のストアでは、ここからカートページが開きます。</p>`
+      : '<p>カートはまだ空です。セットを組みましょうか？</p>');
+    setFollow(['火鍋パーティーを計画したい', '今日のセールは？']);
+  }
+
+  function newChat() {
+    thread.innerHTML = '';
+    welcome.hidden = false;
+    stage.classList.add('home');
+    state.prefs = null; state.plans = []; state.busy = false;
+    setFollow([]);
+    closeSheet();
+    scroll.scrollTop = 0;
+    syncComposer();
+    input.focus({ preventScroll: true });
+  }
+  $('newBtn').addEventListener('click', newChat);
+
+  /* ---------- clicks inside the stage ---------- */
+  stage.addEventListener('click', (e) => {
+    const s = e.target.closest('[data-starter]');
+    if (s && !state.busy) return send(STARTERS[+s.dataset.starter].say);
+    const chip = e.target.closest('[data-say]');
+    if (chip && !state.busy) return send(chip.dataset.say);
+    const step = e.target.closest('.ask [data-step]');
+    if (step) {
+      const box = step.parentElement, out = box.querySelector('output');
+      const v = Math.min(12, Math.max(1, parseInt(out.textContent, 10) + +step.dataset.step));
+      out.textContent = v + '人';
+      box.querySelector('[data-step="-1"]').disabled = v <= 1;
+      box.querySelector('[data-step="1"]').disabled = v >= 12;
+      return;
+    }
+    const plan = e.target.closest('[data-plan]');
+    if (plan) return openSheet(+plan.dataset.plan);
+    const add = e.target.closest('[data-add]');
+    if (add && !add.classList.contains('done')) {
+      const [list, i] = add.dataset.add.split(':');
+      add.classList.add('done');
+      add.textContent = '追加済み';
+      add.setAttribute('aria-label', 'カートに追加済み');
+      state.cart += 1; updateBadge();
+      toast(`${LISTS[list][+i].n}をカートに追加しました`);
+    }
+  });
+  stage.addEventListener('submit', (e) => {
+    const form = e.target.closest('form.ask');
+    if (!form) return;
+    e.preventDefault();
+    if (state.busy) return;
+    const people = parseInt(form.querySelector('output').textContent, 10);
+    const spice = form.querySelector('input[name^="spice"]:checked').value;
+    const budget = +form.querySelector('input[name^="budget"]:checked').value;
+    form.querySelector('fieldset').disabled = true;
+    addUser(`火鍋 · ${people}人 · ${SPICE_LABEL[spice]} · ${budget ? 'ご予算' + yen(budget) : 'ご予算指定なし'}`);
+    replySets({ people, spice, budget });
+  });
+
+  /* ---------- set detail drawer ---------- */
+  function openSheet(id) {
+    const plan = state.plans.find((p) => p.id === id);
+    if (!plan) return;
+    state.detail = { plan, items: plan.items.map((x) => ({ ...x, on: true })) };
+    $('sheetTitle').innerHTML = `<small>${esc(plan.tag)}</small><h3>${esc(plan.title)}</h3><p>${esc(plan.desc)}</p>${plan.cool ? '<span class="coolnote">冷凍品あり・クール便でお届け</span>' : ''}`;
+    $('lines').innerHTML = state.detail.items.map((x, i) => `
+      <li class="line" data-line="${i}">
+        <input type="checkbox" checked id="ln-${i}" aria-label="${esc(x.n)}を選択">
+        <span class="tile" aria-hidden="true"></span>
+        <div class="li">
+          <label class="li-name" for="ln-${i}">${esc(x.n)}</label>
+          <span class="li-meta">${x.f ? '<span class="frozen">冷凍</span>' : ''}${CAT[x.c].label} · 1点 ${yen(x.p)}</span>
+          <div class="li-row">
+            <span class="stepper" role="group" aria-label="数量">
+              <button type="button" data-q="-1" aria-label="数量を減らす">−</button>
+              <output>${x.q}</output>
+              <button type="button" data-q="1" aria-label="数量を増やす">＋</button>
+            </span>
+            <span class="li-total">${yen(x.p * x.q)}</span>
+          </div>
+        </div>
+      </li>`).join('');
+    $('ship').innerHTML = '<span class="ship-txt"></span><span class="bar"><i></i></span>';
+    syncSheet();
+    $('lines').scrollTop = 0;
+    sheet.inert = false;
+    sheet.classList.add('is-open');
+    $('drawerScrim').classList.add('on');
+    setTimeout(() => $('sheetBack').focus({ preventScroll: true }), 60);
+  }
+  function closeSheet() {
+    if (!sheet.classList.contains('is-open')) return;
+    sheet.classList.remove('is-open');
+    $('drawerScrim').classList.remove('on');
+    sheet.inert = true;
+  }
+  function syncSheet() {
+    const items = state.detail.items;
+    items.forEach((x, i) => {
+      const li = $('lines').children[i];
+      li.classList.toggle('off-line', !x.on);
+      li.querySelector('output').textContent = x.q;
+      li.querySelector('.li-total').textContent = yen(x.p * x.q);
+      li.querySelector('[data-q="-1"]').disabled = x.q <= 1 || !x.on;
+      li.querySelector('[data-q="1"]').disabled = x.q >= 20 || !x.on;
+    });
+    const on = items.filter((x) => x.on);
+    const total = on.reduce((s, x) => s + x.p * x.q, 0);
+    const count = on.reduce((s, x) => s + x.q, 0);
+    const left = FREE_SHIP - total;
+    const ship = $('ship');
+    ship.className = 'ship' + (left <= 0 ? ' done' : '');
+    ship.querySelector('.ship-txt').innerHTML = left <= 0 ? '✓ 送料無料の対象です' : `あと<b>${yen(left)}</b>で送料無料`;
+    ship.querySelector('.bar i').style.width = Math.min(100, (total / FREE_SHIP) * 100) + '%';
+    $('sumCount').textContent = `${count}点 合計`;
+    $('sumTotal').innerHTML = `${yen(total)}<small>税込</small>`;
+    const btn = $('addAll');
+    btn.disabled = count === 0;
+    btn.textContent = count ? 'まとめてカートに追加' : '商品を1点以上選んでください';
+    state.detail.total = total; state.detail.count = count;
+  }
+  $('lines').addEventListener('change', (e) => {
+    const li = e.target.closest('[data-line]');
+    if (!li || e.target.type !== 'checkbox') return;
+    state.detail.items[+li.dataset.line].on = e.target.checked;
+    syncSheet();
+  });
+  $('lines').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-q]');
+    if (!b) return;
+    const x = state.detail.items[+b.closest('[data-line]').dataset.line];
+    x.q = Math.min(20, Math.max(1, x.q + +b.dataset.q));
+    syncSheet();
+  });
+  $('sheetBack').addEventListener('click', closeSheet);
+  $('sheetBack2').addEventListener('click', closeSheet);
+  $('drawerScrim').addEventListener('click', closeSheet);
+  $('addAll').addEventListener('click', () => {
+    const { plan, count, total } = state.detail;
+    state.cart += count; updateBadge();
+    closeSheet();
+    toast(`${count}点をカートに追加しました`);
+    addAI(`<div class="added"><strong>✓ ${count}点をカートに追加しました</strong><span>${esc(plan.title)} · ${yen(total)}</span></div><p>ほかに必要なものはありますか？デザートや飲み物もお探しできます。</p>`);
+    setFollow(['カートを見る', 'デザートも探したい', '最初からやり直す']);
+  });
+
+  if (location.hash === '#open') setOpen(true);
+  syncComposer();
+})();
+</script>
+</body>
+</html>
